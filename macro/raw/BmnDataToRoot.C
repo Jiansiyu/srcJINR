@@ -12,7 +12,7 @@ void BmnDataToRoot(TString file, Long_t nEvents = 0, Bool_t doConvert = kTRUE)
 #endif
     bmnloadlibs(); // load BmnRoot libraries
     UInt_t period = 7;
-    BmnSetup stp = kBMNSETUP; // use kSRCSETUP for Short-Range Correlation program and kBMNSETUP otherwise
+    BmnSetup stp = kSRCSETUP; // use kSRCSETUP for Short-Range Correlation program and kBMNSETUP otherwise
     BmnRawDataDecoder* decoder = new BmnRawDataDecoder(file, nEvents, period);
     decoder->SetBmnSetup(stp);
 
