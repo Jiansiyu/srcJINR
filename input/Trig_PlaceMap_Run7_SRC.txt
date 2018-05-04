@@ -1,0 +1,8 @@
+Name    	Slot	Serial
+==================================
+MSC16VS		7	0x030d9a64
+TDC72VHL	10	0x076d16a8
+TQDC16VS	13	0x046f0c75
+TQDC16VS	14	0x076d3c3c
+FVME2TMWR	16	0x076d38f9
+UT24VE  	18	0x07a8fb37
