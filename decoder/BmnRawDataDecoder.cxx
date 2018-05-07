@@ -189,13 +189,12 @@ BmnStatus BmnRawDataDecoder::ConvertRawToRoot() {
 
 	for (;;) {
 		if (fMaxEvent > 0 && fNevents == fMaxEvent) break;
-		//if (fread(&dat, kWORDSIZE, 1, fRawFileIn) != 1) return kBMNERROR;
-		fread(&fDat, kWORDSIZE, 1, fRawFileIn);
+		fread(&fDat, kWORDSIZE, 1, fRawFileIn); // Read in 32 bits
 		fCurentPositionRawFile = ftello64(fRawFileIn);
 		if (fCurentPositionRawFile >= fLengthRawFile) break;
-		if (fDat == kSYNC1) { //search for start of event
+		if (fDat == kSYNC1) { // Wait until we find the start of an event stored in stream
 			// read number of bytes in event
-			if (fread(&fDat, kWORDSIZE, 1, fRawFileIn) != 1) continue;
+			if (fread(&fDat, kWORDSIZE, 1, fRawFileIn) != 1) continue;  // the total number of elements read is returned, i.e. if 1 was actually read
 			fDat = fDat / kNBYTESINWORD + 1; // bytes --> words
 			if (fDat >= 100000) { // what the constant?
 				printf("Wrong data size: %d:  skip this event\n", fDat);
@@ -206,7 +205,10 @@ BmnStatus BmnRawDataDecoder::ConvertRawToRoot() {
 				if (fread(data, kWORDSIZE, fDat, fRawFileIn) != fDat) continue;
 				fEventId = data[0];
 				if (fEventId <= 0) continue; // skip bad events
+				//printf("Size of event data: %i, %i\n", fDat, sizeof(data)/sizeof(data[0]));
 				ProcessEvent(data, fDat);
+				if( data[0] != (fNevents+1)) // Just a check to see if somehow ProcessEvent messed up our counting
+					printf(ANSI_COLOR_RED "***Extreme warning, events are not synced: %i, %i***\n" ANSI_COLOR_RESET,  fEventId, fNevents+1);
 				fNevents++;
 				fRawTree->Fill();
 			}
@@ -309,120 +311,6 @@ BmnStatus BmnRawDataDecoder::InitConverter() {
 	return kBMNSUCCESS;
 }
 
-BmnStatus BmnRawDataDecoder::wait_stream(deque<UInt_t> *que, Int_t len, UInt_t limit) {
-	Int_t t;
-	Int_t dt = 10000;
-	while (que->size() < len) {
-		if (t > limit)
-			return kBMNERROR;
-		usleep(dt);
-		t += dt;
-	}
-	return kBMNSUCCESS;
-}
-
-BmnStatus BmnRawDataDecoder::wait_file(Int_t len, UInt_t limit) {
-	Long_t pos = ftello64(fRawFileIn);
-	Int_t t = 0;
-	Int_t dt = 1000000;
-	while (fLengthRawFile < pos + len) {
-		//        gSystem->ProcessEvents();
-		if (t > limit)
-			return kBMNERROR;
-		usleep(dt);
-		fseeko64(fRawFileIn, 0, SEEK_END);
-		fLengthRawFile = ftello64(fRawFileIn);
-		fseeko64(fRawFileIn, pos - fLengthRawFile, SEEK_CUR);
-		t += dt;
-	}
-	return kBMNSUCCESS;
-}
-
-BmnStatus BmnRawDataDecoder::ConvertRawToRootIterate(UInt_t *buf, UInt_t len) {
-	//        fRawTree->Clear();
-	//    if (wait_stream(fDataQueue, 2) == kBMNERROR)
-	//        return kBMNTIMEOUT;
-	//    fDat = fDataQueue->front();
-	//    fDataQueue->pop_front();
-	//    if (fDat == kSYNC1) { //search for start of event
-	//        // read number of bytes in event
-	//        fDat = fDataQueue->front();
-	//        fDataQueue->pop_front();
-	//        if (wait_stream(fDataQueue, fDat) == kBMNERROR)
-	//            return kBMNTIMEOUT;
-	//        fDat = fDat / kNBYTESINWORD + 1; // bytes --> words
-	//        if (fDat * kNBYTESINWORD >= 100000) { // what the constant?
-	//            printf("Wrong data size: %d:  skip this event\n", fDat);
-	//            fDataQueue->erase(fDataQueue->begin(), fDataQueue->begin() + fDat * kNBYTESINWORD);
-	//            return kBMNERROR;
-	//        } else {
-	//            //read array of current event data and process them
-	//            if (fread(data, kWORDSIZE, fDat, fRawFileIn) != fDat) return kBMNERROR;
-	//            for (Int_t iByte = 0; iByte < fDat * kNBYTESINWORD; iByte++) {
-	//                data[iByte] = fDataQueue->front();
-	//                fDataQueue->pop_front();
-	//            }
-	fEventId = buf[0];
-	//            printf("EventID = %d\n", fEventId);
-	if (fEventId <= 0) return kBMNERROR; // continue; // skip bad events (it is possible, but what about 0?) 
-	ProcessEvent(buf, len);
-	fNevents++;
-	//                fRawTree->Fill();
-	//        }
-	//    }
-	return kBMNSUCCESS;
-}
-
-BmnStatus BmnRawDataDecoder::ConvertRawToRootIterateFile(UInt_t limit) {
-	//        if (fMaxEvent > 0 && fNevents == fMaxEvent) break;
-	while (kTRUE) {
-		if (wait_file(4 * kWORDSIZE, limit) == kBMNERROR) {
-			return kBMNTIMEOUT;
-			printf("file timeout\n");
-		}
-		fCurentPositionRawFile = ftello64(fRawFileIn);
-		fread(&fDat, kWORDSIZE, 1, fRawFileIn);
-		if (fDat == kRUNNUMBERSYNC) {
-			printf("RunNumberSync\n");
-			syncCounter++;
-			if (syncCounter > 1) {
-				cout << "Finish by SYNC" << endl;
-				return kBMNFINISH;
-			}
-			fread(&fDat, kWORDSIZE, 1, fRawFileIn); //skip word
-		}
-		if (fDat == kSYNC1) { //search for start of event
-			// read number of bytes in event
-			//printf("kSYNC1\n");
-			if (fread(&fDat, kWORDSIZE, 1, fRawFileIn) != 1) return kBMNERROR;
-			fDat = fDat / kNBYTESINWORD + 1; // bytes --> words
-			if (fDat * kNBYTESINWORD >= 1000000) { // what the constant?
-				printf("Wrong data size: %d:  skip this event\n", fDat);
-				return kBMNFINISH;
-			}
-			//read array of current event data and process them
-			if (wait_file(fDat * kNBYTESINWORD * kWORDSIZE, limit) == kBMNERROR) {
-				return kBMNTIMEOUT;
-				printf("file timeout\n");
-			}
-			if (fread(data, kWORDSIZE, fDat, fRawFileIn) != fDat) {
-				printf("finish by length\n");
-				return kBMNFINISH;
-			}
-			fEventId = data[0];
-			if (fEventId <= 0) {
-				printf("bad event #%d\n", fEventId);
-				return kBMNERROR; // continue; // skip bad events (it is possible, but what about 0?) 
-			}
-			ProcessEvent(data, fDat);
-			fNevents++;
-			break;
-			//        fRawTree->Fill();
-		}
-	}
-	return kBMNSUCCESS;
-}
-
 BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 	sync->Delete();
 	tdc->Delete();
@@ -441,7 +329,7 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 		printf(ANSI_COLOR_BLUE "[%.2f%%]   " ANSI_COLOR_RESET, fCurentPositionRawFile * 100.0 / fLengthRawFile);
 		printf("EVENT:%d   RUN:%d\n", d[0], fRunId);
 	}
-
+	//printf(ANSI_COLOR_BLUE "NEW EVENT\n" ANSI_COLOR_RESET);
 	Long64_t idx = 1;
 	BmnEventType evType = kBMNPAYLOAD;
 
@@ -454,6 +342,7 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 			printf("[WARNING] Event %d:\n serial = 0x%06X\n id = Ox%02X\n payload = %d\n", fEventId, serial, id, payload);
 			break;
 		}
+		//printf("Before procesEvent read: %i\n",idx);
 		switch (id) {
 			case kADC64VE_XGE:
 			case kADC64VE:
@@ -461,21 +350,21 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 					Bool_t isFound = kFALSE;
 					for (Int_t iSer = 0; iSer < fNSiliconSerials; ++iSer)
 						if (serial == fSiliconSerials[iSer]) {
-							Process_ADC64VE(&d[idx], payload, serial, 128, adc128);
+							//Process_ADC64VE(&d[idx], payload, serial, 128, adc128);
 							isFound = kTRUE;
 							break;
 						}
 					if (isFound) break;
 					for (Int_t iSer = 0; iSer < fNGemSerials; ++iSer)
 						if (serial == fGemSerials[iSer]) {
-							Process_ADC64VE(&d[idx], payload, serial, 32, adc32);
+							//Process_ADC64VE(&d[idx], payload, serial, 32, adc32);
 							isFound = kTRUE;
 							break;
 						}
 					if (isFound) break;
 					for (Int_t iSer = 0; iSer < fNCSCSerials; ++iSer)
 						if (serial == fCSCSerials[iSer]) {
-							Process_ADC64VE(&d[idx], payload, serial, 32, adc32);
+							//Process_ADC64VE(&d[idx], payload, serial, 32, adc32);
 							isFound = kTRUE;
 							break;
 						}
@@ -492,7 +381,7 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 						}
 					};
 					if (isZDC)
-						Process_ADC64WR(&d[idx], payload, serial, adc);
+						0.;//Process_ADC64WR(&d[idx], payload, serial, adc);
 					else {
 						for (Int_t iSer = 0; (iSer < fNECALSerials); ++iSer) {
 							if (serial == fECALSerials[iSer]) {
@@ -501,7 +390,7 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 							}
 						};
 						if (isECAL)
-							Process_ADC64WR(&d[idx], payload, serial, adc);
+							0.;//Process_ADC64WR(&d[idx], payload, serial, adc);
 					}
 					//if (isECAL) printf("Serial 0x%08x %d %d\n",serial,isZDC,isECAL);
 					break;
@@ -516,7 +405,9 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 				Process_Tacquila(&d[idx], payload);
 				break;
 		}
+		//printf("After procesEvent read: %i\n",idx);
 		idx += payload;
+		//printf("After adding payload %i\n",idx);
 	}
 	//printf("eventHeaderDAQ->GetEntriesFast() %d  eventID %d\n", eventHeaderDAQ->GetEntriesFast(), fEventId);
 	new((*eventHeaderDAQ)[eventHeaderDAQ->GetEntriesFast()]) BmnEventHeader(fRunId, fEventId, TDatime(Int_t(TTimeStamp(time_t(fTime_s), fTime_ns).GetDate(kFALSE)), Int_t(TTimeStamp(time_t(fTime_s), fTime_ns).GetTime(kFALSE))), evType, kFALSE, trigInfo);
@@ -617,38 +508,71 @@ BmnStatus BmnRawDataDecoder::Process_FVME(UInt_t *d, UInt_t len, UInt_t serial, 
 	for (UInt_t i = 0; i < len; i++) {
 		type = d[i] >> 28;
 		switch (type) {
-			case kEVHEADER:
-			case kEVTRAILER:
-			case kMODTRAILER:
+			// Data structure follows: SpillHead, then EventHead, then ModuleHead, then DATA, then ModuleTrail, then EventTrail, then SpillTrail
 			case kSPILLHEADER:
-			case kSPILLTRAILER:
-			case kSTATUS:
-			case kPADDING:
+				if( (d[i] >> 27) & 0x1 ) printf(ANSI_COLOR_RED "SPILL type is end of spill\n" ANSI_COLOR_RESET);
+				break;
+			case kEVHEADER:
+				// Seems like the event number int(d[i] & 0x7FFFF) at first follows fEventId but then
+				// gets reset every now and then?
 				break;
 			case kMODHEADER:
+				// While they are both reset, this seems to match event number from event header.
+				// Event number here is given by: int(d[i] & 0x7FFF)
 				modId = (d[i] >> 16) & 0x7F;
 				slot = (d[i] >> 23) & 0x1F;
-				//printf("modid 0x%X slot %d serial 0x%X\n", modId, slot, serial);
 				break;
-			default: //data
+			case kMODTRAILER:
+				// Reset module ID and module slot after we see module trailer
+				if( !((d[i] >> 16) & 0x1) ) printf(ANSI_COLOR_RED "Readout overflow error\n" ANSI_COLOR_RESET);
+				//if( !((d[i] >> 17) & 0x1) ) printf(ANSI_COLOR_RED "Readout error\n" ANSI_COLOR_RESET);
+				if( !((d[i] >> 18) & 0x1) ) printf(ANSI_COLOR_RED "TTC error\n" ANSI_COLOR_RESET);
+				if( !((d[i] >> 19) & 0x1) ) printf(ANSI_COLOR_RED "Access error\n" ANSI_COLOR_RESET);
+				modId = 0x00;
+				slot = 0x00;
+				break;
+			case kEVTRAILER:
+				break;
+			case kSPILLTRAILER:
+				if( (d[i] >> 27) & 0x1 ) printf(ANSI_COLOR_RED "SPILL type is end of spill\n" ANSI_COLOR_RESET);
+				break;
+			case kSTATUS:
+				break;
+			case kPADDING:
+				break;
+			case 0x0:
+			case 0x1:
+			case 0x2:
+			case 0x3:
+			case 0x4:
+			case 0x5:
+			case 0x6:
+			case 0x7:
+			//default: //data type
 				{
+					// For this reading i, I have the module header. Now I want to
+					// read this data until a module trailer is found, and exit
+					// and return i after trailer  -- in otherwords, I want to exit these 
+					// functions with the i set to 1 after the module trailer
 					switch (modId) {
 						case kTDC64V:
 						case kTDC64VHLE:
 						case kTDC72VHL:
-						case kTDC32VL:
+						case kTDC32VL: // this one is okay and doesn't abuse i
 							FillTDC(d, serial, slot, modId, i);
 							break;
-						case kTQDC16VS:
+						case kTQDC16VS: // FIX: this abuses i
 							FillTQDC(d, serial, slot, modId, i);
 							break;
 						case kMSC:
-							FillMSC(d, serial, i); //empty now
+							//FillMSC(d, serial, i); //empty now
 							break;
-						case kTRIG:
+						case kTRIG: // this one is okay; bit silly it doesn't return an index
+							    // past the ones it's read, but it's fine because there is
+							    // a catch statment for trailers above..
 							FillSYNC(d, serial, i);
 							break;
-						case kU40VE_RC:
+						case kU40VE_RC: // This one freaks me out because he skips ahead 5 sometimes??
 							FillU40VE(d, evType, slot, i, spillInfo);
 							break;
 					}
@@ -768,34 +692,29 @@ BmnStatus BmnRawDataDecoder::Process_Tacquila(UInt_t *d, UInt_t len) {
 }
 
 BmnStatus BmnRawDataDecoder::FillU40VE(UInt_t *d, BmnEventType &evType, UInt_t slot, UInt_t & idx, BmnTrigInfo* trigInfo) {
-	BmnTriggerType trType;
+	// In this module, we only need to check TrigSource and TrigWord
+	// because TAI time is not WR corrected, and we didn't have AUX counters
+	// for our run -- i.e. only type 3
 	UInt_t type = d[idx] >> 28;
 	Bool_t countersDone = kFALSE;
 	while (type == 2 || type == 3 || type == 4) {
-		//printf("type %d  slot %d\n", type, slot);
-		if (fPeriodId > 4 && type == kGEMTRIGTYPE && slot == kEVENTTYPESLOT) {
-			trType = ((d[idx] & 0x7) == kTRIGMINBIAS) ? kBMNMINBIAS : kBMNBEAM;
-			trigInfo->SetTrigType(trType);
-			//                            evType = ((d[i] & 0x8) >> 3) ? kBMNPEDESTAL : kBMNPAYLOAD;
-			evType = (d[idx] & 0x8) ? kBMNPEDESTAL : kBMNPAYLOAD;
-			//printf("evType %d\n", evType);
+		
+		if( ( (type == 3) && (slot == 12) ) ){
+			if( !((d[idx] >> 16) & 0x1)){
+				printf(ANSI_COLOR_RED "ERROR: Trigger source NOT external!\n" ANSI_COLOR_RESET);
+				return kBMNERROR;
+			}
+			evType = ( d[idx] & 0x8) ? kBMNPEDESTAL: kBMNPAYLOAD; //pedestal or 'payload/beam'
 			if (evType == kBMNPEDESTAL)
 				fPedoCounter++;
-		}
-		if (type == 4 && !countersDone) {
-			trigInfo->SetTrigCand    (d[idx + 0] & 0x1FFFFFFF);
-			trigInfo->SetTrigAccepted(d[idx + 1] & 0x1FFFFFFF);
-			trigInfo->SetTrigBefo    (d[idx + 2] & 0x1FFFFFFF);
-			trigInfo->SetTrigAfter   (d[idx + 3] & 0x1FFFFFFF);
-			trigInfo->SetTrigRjct    (d[idx + 4] & 0x1FFFFFFF);
-			idx += 5;
-			//                printf("cand %04u, acc %04u, bef %04u, after %04u, rjct %04u\n",
-			//                        trigInfo->GetTrigCand(),
-			//                        trigInfo->GetTrigAccepted(),
-			//                        trigInfo->GetTrigBefo(),
-			//                        trigInfo->GetTrigAfter(),
-			//                        trigInfo->GetTrigRjct());
-			countersDone = kTRUE;
+
+			if( d[idx] & 0x7){
+				printf(ANSI_COLOR_RED "ERROR: T0U module not active low!\n" ANSI_COLOR_RESET);
+				return kBMNERROR;
+
+			}
+
+				
 		}
 		idx++; //go to the next DATA-word
 		type = d[idx] >> 28;
@@ -807,87 +726,141 @@ BmnStatus BmnRawDataDecoder::FillTDC(UInt_t *d, UInt_t serial, UInt_t slot, UInt
 	UInt_t type = d[idx] >> 28;
 	//    printf("fiiltdc\n");
 	while (type != kMODTRAILER) { //data will be finished when module trailer appears 
+		if (type == 6){
+			printf(ANSI_COLOR_RED "ERROR: TDC error thrown\n" ANSI_COLOR_RESET);
+			if( ((d[idx] >>12) & 0x1) || ( (d[idx] >> 13) & 0x1  ) ){
+				printf( ANSI_COLOR_RED "ERROR: Critical TDC erorr thrown\n" ANSI_COLOR_RESET);
+				return kBMNERROR;
+			}
+		}
 		if (type == 4 || type == 5) { // 4 - leading, 5 - trailing
 			UInt_t tdcId = (d[idx] >> 24) & 0xF;
 			UInt_t time = (modId == kTDC64V) ? (d[idx] & 0x7FFFF) : ((d[idx] & 0x7FFFF) << 2) | ((d[idx] & 0x180000) >> 19);
 			UInt_t channel = (modId == kTDC64V) ? (d[idx] >> 19) & 0x1F : (d[idx] >> 21) & 0x7;
-			//if (modId == kTDC64V && tdcId == 2) channel += 32;
 			TClonesArray &ar_tdc = *tdc;
 			new(ar_tdc[tdc->GetEntriesFast()]) BmnTDCDigit(serial, modId, slot, (type == 4), channel, tdcId, time);
 		}
 		idx++; //go to the next DATA-word
 		type = d[idx] >> 28;
 	}
+	idx--;
 	return kBMNSUCCESS;
 }
 
 BmnStatus BmnRawDataDecoder::FillTQDC(UInt_t *d, UInt_t serial, UInt_t slot, UInt_t modId, UInt_t & idx) {
-	//        printf("serial 0x%08X slot %d  modid 0x%X\n", serial, slot, modId);
 	UInt_t type = d[idx] >> 28; // good
-	UShort_t trigTimestamp = 0;
-	UShort_t adcTimestamp = 0;
-	UShort_t tdcTimestamp = 0;
+	UShort_t trigger_time = 0;
+	UShort_t ADC_time = 0;
 	UInt_t iSampl = 0;
 	UInt_t channel = 0;
 	Short_t valI[ADC_SAMPLING_LIMIT];
 	Bool_t inADC = kFALSE;
-	if (type == 6) {
-		fprintf(stderr, "TQDC Error: %d\n", d[idx++] & 0xF); // @TODO logging
-		return kBMNSUCCESS;
-	}
-	while (type != kMODTRAILER) {
-		UInt_t mode = (d[idx] >> 26) & 0x3; // good
-		if (!inADC) {
-			//            printf("type %d mode %d\n", type, mode);
-			if ((mode == 0) && (type == 4 || type == 5)) {
-				UInt_t rcdata = (d[idx] >> 24) & 0x3;
-				channel = (d[idx] >> 19) & 0x1F;
-				UInt_t time = 4 * (d[idx] & 0x7FFFF) + rcdata; // in 25 ps
-				new((*tqdc_tdc)[tqdc_tdc->GetEntriesFast()]) BmnTDCDigit(serial, modId, slot, (type == 4), channel, 0, time, tdcTimestamp);
-			} else if ((type == 4) && (mode == 2)) {
-				channel = (d[idx] >> 19) & 0x1F;
-				trigTimestamp = d[idx++] & 0xFF;
-				adcTimestamp = d[idx] & 0xFF;
-				inADC = kTRUE;
-				//                printf("ADC: channel %d trigTimestamp %d  adcTimestamp %d\n", channel, trigTimestamp, adcTimestamp);
-			} else if ((type == 2) && (mode == 0)) {
-				UInt_t iEv = (d[idx] >> 12) & 0x1FFF;
-				tdcTimestamp = d[idx] & 0xFFF;
-				//                printf("TDC ev header: %d\n", iEv);
-			} else if ((type == 3) && (mode == 0)) {
-				UInt_t iEv = (d[idx] >> 12) & 0x1FFF;
-				//                printf("TDC ev trailer: %d\n", iEv);
-			}
-		} else {
-			if ((type == 5) && ((mode == 2) || (mode == 1)) && (iSampl < ADC_SAMPLING_LIMIT)) {
-				Short_t val = (d[idx] & ((1 << 14) - 1)) - (1 << (14 - 1));
-				valI[iSampl++] = val;
-			} else {
-				new((*tqdc_adc)[tqdc_adc->GetEntriesFast()]) BmnTQDCADCDigit(serial, channel, slot, iSampl, valI, trigTimestamp, adcTimestamp);
-				inADC = kFALSE;
-				iSampl = 0;
-			}
+	
+	// Search for any TDC errors thrown
+	if (type == 6){
+		printf(ANSI_COLOR_RED "ERROR: TDC error thrown\n" ANSI_COLOR_RESET);
+		if( ((d[idx] >>12) & 0x1) || ( (d[idx] >> 13) & 0x1  ) ){
+			printf( ANSI_COLOR_RED "ERROR: Critical TDC erorr thrown\n" ANSI_COLOR_RESET);
+			return kBMNERROR;
 		}
-		type = d[++idx] >> 28;
 	}
+
+	while (type != kMODTRAILER) {
+		UInt_t mode = (d[idx] >> 26) & 0x3; // Search for types 4 and 5
+
+
+		if ( type == 2 ){ //TDC event header
+			//printf("TDC event header\n");
+			UInt_t tdcTimeStamp = (d[idx] & 0xFFF);
+			UInt_t tdcEvN	     = (d[idx] >> 12) & 0xFFF;
+		}
+		
+		else if( ( mode == 0 ) && ( (type == 4) || (type == 5) ) ){ // TDC Data
+			//printf("TDC data\n");
+			channel = (d[idx] >> 19) & 0x1F;
+			UInt_t time = ((d[idx] & 0x7FFFF) << 2) | ((d[idx] >> 24) & 0x3);
+			// type here doesn't matter because it's not leading vs trailing, only single edge leading
+                	new((*tqdc_tdc)[tqdc_tdc->GetEntriesFast()]) BmnTDCDigit(serial, modId, slot, type, channel, 0, time);
+			channel = -1;
+			time = -1;
+		}
+		
+		//else if ( type == 3 ){ //TDC event trailer
+		//	printf("TDC event trailer\n");
+		//}
+		
+		else if( ( type == 4 ) && ( mode!=0 ) ){ // ADC timestamping	
+			//printf("ADC trigger time stamp\n");
+			// First word is trigger Timestamp
+			trigger_time = d[idx] & 0xFFFF;
+			channel = (d[idx] >> 19) & 0x1F;
+			// Next word is ADC timestamp
+			//printf("ADC time stamp\n");
+			idx++;
+			ADC_time = d[idx] & 0xFFFF;
+			if( int((d[idx] >> 19) & 0x1F) != channel) printf(ANSI_COLOR_RED "ERROR: TQDC channels do not sync\n" ANSI_COLOR_RESET);
+			// And now the next word will be ADC sampling, which we need
+			// to save the current channel and time stamp values
+			idx++;
+			type = (d[idx] >> 28);
+			mode = (d[idx] >> 26) & 0x3;
+			inADC = kTRUE;
+		}
+
+		if( (type==5) && (mode == 2) && inADC ){
+			while( inADC){
+				//printf("ADC sampling\n");
+                        	if( int((d[idx] >> 19) & 0x1F) != channel) printf(ANSI_COLOR_RED "ERROR: TQDC channels do not sync\n" ANSI_COLOR_RESET);
+				Short_t val = (d[idx] & ( ( 1 << 14 ) - 1 ) ) - ( 1 << (14 - 1));
+				valI[iSampl++] = val;
+				
+				// Finished with ADC sample?
+				idx++;
+				type = d[idx] >> 28;
+				if ( (type != 5) || (mode != 2) ){
+					inADC = kFALSE;
+					new((*tqdc_adc)[tqdc_adc->GetEntriesFast()]) BmnTQDCADCDigit(serial, channel, slot, iSampl, valI, trigger_time, ADC_time);
+					iSampl = 0;
+					channel = -1;
+					trigger_time = -1;
+					ADC_time = -1;
+					memset(valI,0,sizeof(valI));
+				}
+			}
+			idx--;
+		}
+
+		idx++;
+		type = d[idx] >> 28;
+	}
+	idx--;
 	return kBMNSUCCESS;
 }
 
 BmnStatus BmnRawDataDecoder::FillSYNC(UInt_t *d, UInt_t serial, UInt_t & idx) {
-	UInt_t d0 = d[idx + 0];
-	UInt_t d1 = d[idx + 1];
-	UInt_t d2 = d[idx + 2];
-	UInt_t d3 = d[idx + 3];
-	if ((d0 >> 28) != 2 || (d1 >> 28) != 2 || (d2 >> 28) != 2 || (d3 >> 28) != 2) return kBMNERROR; //check TAI code 
+	// Now in here, there is types 2,4,5,7 used primarily. We are only concerned
+	// with types 2. Immediately upon entering, it's always 2,2,2,2 structure for 
+	// every FVME crate
+
+	UInt_t d0 = d[idx + 0]; // stores TAI ns time
+	UInt_t d1 = d[idx + 1]; // stores TAI seconds, ns, and flags
+	UInt_t d2 = d[idx + 2]; // stores event Nu, TAI seconds
+	UInt_t d3 = d[idx + 3]; // stores event Nu
+	
+	// Only look at event types 2,2,2,2 for all 4
+	if ((d0 >> 28) != 2 || (d1 >> 28) != 2 || (d2 >> 28) != 2 || (d3 >> 28) != 2) return kBMNERROR;
 	Long64_t ts_t0_s = -1;
 	Long64_t ts_t0_ns = -1;
 	Long64_t GlobalEvent = -1;
 
-	if (((d1 >> 2) & 0x3) == 2) {
-		ts_t0_ns = d0 & 0x0FFFFFFF | ((d1 & 0x3) << 28);
-		ts_t0_s = ((d1 >> 4) & 0xFFFFFF) | ((d2 & 0xFFFF) << 24);
-		GlobalEvent = ((d3 & 0x0FFFFFFF) << 12) | ((d2 >> 16) & 0xFFF);
+	if( ((d1>>2) & 0x3) !=2 ){
+		printf(ANSI_COLOR_RED "ERROR: BAD TAI SYNC OF FVME CRATE %i" ANSI_COLOR_RESET, serial);
+		return kBMNERROR;
 	}
+
+	ts_t0_ns = d0 & 0x0FFFFFFF | ((d1 & 0x3) << 28);
+	ts_t0_s = ((d1 >> 4) & 0xFFFFFF) | ((d2 & 0xFFFF) << 24);
+	GlobalEvent = ((d3 & 0x0FFFFFFF) << 12) | ((d2 >> 16) & 0xFFF);
 
 	fTime_ns = ts_t0_ns;
 	fTime_s = ts_t0_s;
@@ -895,6 +868,11 @@ BmnStatus BmnRawDataDecoder::FillSYNC(UInt_t *d, UInt_t serial, UInt_t & idx) {
 	if (fEventId == 1) {
 		fTimeStart_s = ts_t0_s;
 		fTimeStart_ns = ts_t0_ns;
+	}
+
+	if( fEventId != GlobalEvent){
+		printf(ANSI_COLOR_RED "** ERROR ** EventId from SYNC and global header DO NOT MATCH ** ERROR **\n" ANSI_COLOR_RESET);
+		return kBMNERROR;
 	}
 
 	TClonesArray &ar_sync = *sync;
