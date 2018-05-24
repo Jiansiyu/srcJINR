@@ -220,9 +220,27 @@ class BmnRawDataDecoder {
 			return fLANDMapper;
 		}
 
-		void SetTrigMapping(TString map) {
-			fTrigMapFileName = map;
+		
+		void SetTrigPlaceMap(TString map){
+			fTrigPlaceMapFileName = map;
 		}
+		void SetTrigDetMap(TString map){
+			fTrigDetMapFileName = map;
+		}
+		void SetTrigINLTQDC1(TString file){
+			fTrigINLTQDC1FileName = file;
+		}
+		void SetTrigINLTQDC2(TString file){
+			fTrigINLTQDC2FileName = file;
+		}
+		void SetTrigINLTDC1(TString file){
+			fTrigINLTDC1FileName = file;
+		}
+		void SetTrigINLTDC2(TString file){
+			fTrigINLTDC2FileName = file;
+		}
+
+
 
 		void SetSiliconMapping(TString map) {
 			fSiliconMapFileName = map;
@@ -232,9 +250,6 @@ class BmnRawDataDecoder {
 			fCSCMapFileName = map;
 		}
 
-		void SetTrigINLFile(TString file) {
-			fTrigINLFileName = file;
-		}
 
 		void SetDchMapping(TString map) {
 			fDchMapFileName = map;
@@ -396,8 +411,13 @@ class BmnRawDataDecoder {
 		TString fLANDVScintFileName;
 		TString fSiliconMapFileName;
 		TString fCSCMapFileName;
-		TString fTrigMapFileName;
-		TString fTrigINLFileName;
+
+		TString fTrigPlaceMapFileName;	
+		TString fTrigDetMapFileName  ;	
+		TString fTrigINLTQDC1FileName;	
+		TString fTrigINLTQDC2FileName;	
+		TString fTrigINLTDC1FileName ;	
+		TString fTrigINLTDC2FileName ;	
 
 		ifstream fDchMapFile;
 		ifstream fMwpcMapFile;
@@ -408,8 +428,6 @@ class BmnRawDataDecoder {
 		ifstream fZDCCalibraionFile;
 		ifstream fECALMapFile;
 		ifstream fECALCalibraionFile;
-		ifstream fTrigMapFile;
-		ifstream fTrigINLFile;
 
 		TFile *fRootFileIn;
 		TFile *fRootFileOut;

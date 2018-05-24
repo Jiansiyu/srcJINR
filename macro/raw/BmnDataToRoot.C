@@ -32,14 +32,13 @@ void BmnDataToRoot(TString file, Long_t nEvents = 0, Bool_t doConvert = kTRUE)
 
 	TString PeriodSetupExt = Form("%d%s.txt", period, ((stp == kBMNSETUP) ? "" : "_SRC"));
 	
-	//TODO: based on run number, switch which trig map file to use.. we have 3 different configurations!
-	decoder->SetTrigMapping(TString("Trig_map_Run") + PeriodSetupExt); 
-
-	TString NameInlTrig = "TRIG_INL_076D-16A8.txt"; //SRC RUN7, BM@N RUN6 RUN5 
-	if (period == 7 && stp == kBMNSETUP )
-		NameInlTrig = "TRIG_INL_076D-180A.txt"; //BM@N RUN7 (without Si detector)
-	decoder->SetTrigINLFile(NameInlTrig); 
-
+	decoder	->	SetTrigPlaceMap	(TString("Trig_PlaceMap_Run7_SRC.txt"	));
+	decoder	->	SetTrigDetMap	(TString("Trig_map_Run7_SRC.txt"	));
+	decoder	->	SetTrigINLTQDC1	(TString("TQDC16VS-046F-0C75-TDC.ini"	));	// For TQDC at negative polarity
+	decoder	->	SetTrigINLTQDC2	(TString("TQDC16VS-076D-3C3C-TDC.ini"	));	// For TQDC at positive polarity
+	decoder	->	SetTrigINLTDC1	(TString("TDC72VHL-076D-16A8.ini"	));	// For TDC72
+	decoder	->	SetTrigINLTDC2	(TString("TDC32VL_FFD.dat"		));	// For TDC32
+	
 	//decoder->SetSiliconMapping("SILICON_map_run7.txt");
 	//decoder->SetGemMapping(TString("GEM_map_run") + PeriodSetupExt);
 	//decoder->SetCSCMapping(TString("CSC_map_period") + PeriodSetupExt);
@@ -59,7 +58,7 @@ void BmnDataToRoot(TString file, Long_t nEvents = 0, Bool_t doConvert = kTRUE)
 	decoder->SetLANDVScint("neuland_sync_2.txt");
 	decoder->InitMaps();
 	if (doConvert) decoder->ConvertRawToRoot(); // Convert raw data in .data format into adc-,tdc-, ..., sync-digits in .root format
-	//decoder->DecodeDataToDigi(); // Decode data into detector-digits using current mappings.
+	decoder->DecodeDataToDigi(); // Decode data into detector-digits using current mappings.
 
 	delete decoder;
 }

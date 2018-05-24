@@ -54,8 +54,15 @@ BmnRawDataDecoder::BmnRawDataDecoder() {
 	fDigiFileName = "";
 	fDchMapFileName = "";
 	fMwpcMapFileName = "";
-	fTrigMapFileName = "";
-	fTrigINLFileName = "";
+
+	fTrigPlaceMapFileName = "";	// For VME serial / slot --> which module 
+	fTrigDetMapFileName = "";	// For slot / channel    --> which detector
+	fTrigINLTQDC1FileName = "";	// For TQDC neg polarity
+	fTrigINLTQDC2FileName = "";	// For TQDC pos polarity
+	fTrigINLTDC1FileName = "";	// For TDC74VHL
+	fTrigINLTDC2FileName = "";	// For TDC32
+	
+
 	fGemMapFileName = "";
 	fTof400StripMapFileName = "";
 	fTof400PlaceMapFileName = "";
@@ -135,8 +142,12 @@ BmnRawDataDecoder::BmnRawDataDecoder(TString file, ULong_t nEvents, ULong_t peri
 	fDigiFileName = Form("bmn_run%04d_digi.root", fRunId);
 	fDchMapFileName = "";
 	fMwpcMapFileName = "";
-	fTrigMapFileName = "";
-	fTrigINLFileName = "";
+	fTrigPlaceMapFileName = "";	// For VME serial / slot --> which module 
+	fTrigDetMapFileName = "";	// For slot / channel    --> which detector
+	fTrigINLTQDC1FileName = "";	// For TQDC neg polarity
+	fTrigINLTQDC2FileName = "";	// For TQDC pos polarity
+	fTrigINLTDC1FileName = "";	// For TDC74VHL
+	fTrigINLTDC2FileName = "";	// For TDC32
 	fGemMapFileName = "";
 	fTof400StripMapFileName = "";
 	fTof400PlaceMapFileName = "";
@@ -924,7 +935,7 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 	InitDecoder();
 	BmnEventType curEventType = kBMNPAYLOAD;
 	BmnEventType prevEventType = curEventType;
-
+	
 	if (fGemMapper || fSiliconMapper) {
 		for (UInt_t iEv = 0; iEv < fNevents; ++iEv) {
 			if (iEv % 100 == 0) {
@@ -966,18 +977,20 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 
 		fRawTree->GetEntry(iEv);
 		FillTimeShiftsMap();
-
+		
 		BmnEventHeader* headDAQ = (BmnEventHeader*) eventHeaderDAQ->At(0);
 		if (!headDAQ) continue;
 
 		if (iEv == 0) {
-
+			// Pull some values for the runHeader?
 			nEv = (Int_t) runHeaderDAQ->GetNEvents();
 			fSize = Double_t(fLengthRawFile / 1024. / 1024.);
 			runId = runHeaderDAQ->GetRunId();
 			fRunStartTime = runHeaderDAQ->GetStartTime();
 			fRunEndTime = runHeaderDAQ->GetFinishTime();
 
+			// Stuff for GEM I don't care about??
+			/*
 			if (!UniDbRun::GetRun(fPeriodId, runId))
 				UniDbRun::CreateRun(fPeriodId, runId, TString::Format("/nica/data4mpd1/dataBMN/bmndata2/run6/raw/mpd_run_Glob_%d.data", runId), "", NULL, NULL, fRunStartTime, &fRunEndTime, &nEv, NULL, &fSize, NULL);
 
@@ -992,7 +1005,7 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 			UInt_t runLength = fRunEndTime.Convert() - fRunStartTime.Convert(); //in seconds
 			Double_t timeStep = runLength * 1.0 / fNevents; //time for one event
 			printf("Run duration = %d sec.\t TimeStep = %f sec./event\n", runLength, timeStep);
-
+		
 			TObjArray* tango_data_gem = db_tango.SearchTangoIntervals((char*) "gem", (char*) "trip", (char*) date_start.Data(), (char*) date_end.Data(), condition, condition_value, map_channel);
 			if (tango_data_gem) {
 				for (Int_t i = 0; i < tango_data_gem->GetEntriesFast(); ++i) {
@@ -1005,22 +1018,28 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 						}
 				}
 			}
+			*/
 		}
-
+		
 		curEventType = headDAQ->GetType();
 
+		// Stuff for GEM I don't care about??
+		/*
 		Bool_t isTripEvent = kFALSE;
 		for (Int_t iTrip = 0; iTrip < startTripEvent.size(); ++iTrip) {
 			if (headDAQ->GetEventId() > startTripEvent[iTrip] && headDAQ->GetEventId() < endTripEvent[iTrip]) {
 				isTripEvent = kTRUE;
 				break;
 			}
-		}
+		}	
+		*/
 
 		if (fTrigMapper) {
-			fTrigMapper->FillEvent(tqdc_tdc, tqdc_adc);
+			//fTrigMapper->FillEvent(tqdc_tdc, tqdc_adc);
 			fTrigMapper->FillEvent(tdc);
 		}
+
+		/*
 		fT0Time = 0.;
 		GetT0Info(fT0Time, fT0Width);
 		new((*eventHeader)[eventHeader->GetEntriesFast()]) BmnEventHeader(headDAQ->GetRunId(), headDAQ->GetEventId(), headDAQ->GetEventTime(), curEventType, isTripEvent, headDAQ->GetTrigInfo(), fTimeShifts);
@@ -1049,10 +1068,12 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 			if (fLANDMapper) fLANDMapper->fillEvent(tacquila, land);
 		}
 
+		*/
 		fDigiTree->Fill();
 		prevEventType = curEventType;
 	}
 
+	
 	printf(ANSI_COLOR_RED "\n=============== RUN" ANSI_COLOR_RESET);
 	printf(ANSI_COLOR_BLUE " %04d " ANSI_COLOR_RESET, runId);
 	printf(ANSI_COLOR_RED "SUMMARY ===============\n" ANSI_COLOR_RESET);
@@ -1070,7 +1091,7 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 	DisposeDecoder();
 	fDigiFileOut->Close();
 	fRootFileIn->Close();
-
+	
 	return kBMNSUCCESS;
 }
 
@@ -1085,7 +1106,7 @@ BmnStatus BmnRawDataDecoder::InitDecoder() {
 	fNevents = (fMaxEvent > fRawTree->GetEntries() || fMaxEvent == 0) ? fRawTree->GetEntries() : fMaxEvent;
 
 	if (fDetectorSetup[0]) {
-		fTrigMapper = new BmnTrigRaw2Digit(fTrigMapFileName, fTrigINLFileName, fDigiTree);
+		fTrigMapper = new BmnTrigRaw2Digit(fTrigPlaceMapFileName, fTrigDetMapFileName, fTrigINLTQDC1FileName, fTrigINLTQDC2FileName, fTrigINLTDC1FileName, fTrigINLTDC2FileName, fDigiTree );
 		if (fT0Map == NULL) {
 			BmnTrigMapping tm = fTrigMapper->GetT0Map();
 			printf("T0 serial 0x%X got from trig mapping\n", tm.serial);
@@ -1192,102 +1213,8 @@ BmnStatus BmnRawDataDecoder::ClearArrays() {
 	return kBMNSUCCESS;
 }
 
-BmnStatus BmnRawDataDecoder::DecodeDataToDigiIterate() {
-	ClearArrays();
-	//            Int_t iEv = fRawTree->GetEntries();
-	//            fRawTree->GetEntry(iEv);
 
-	FillTimeShiftsMap();
-	BmnEventHeader* headDAQ = (BmnEventHeader*) eventHeaderDAQ->At(0);
-	fCurEventType = headDAQ->GetType();
 
-	if (fTrigMapper) {
-		fTrigMapper->FillEvent(tqdc_tdc, tqdc_adc);
-		fTrigMapper->FillEvent(tdc);
-	}
-	fT0Time = 0.;
-	GetT0Info(fT0Time, fT0Width);
-
-	if (fCurEventType == kBMNPEDESTAL) {
-		if (fPedEvCntr == fEvForPedestals - 1) return kBMNERROR; //FIX return!
-		CopyDataToPedMap(adc32, adc128, fPedEvCntr);
-		fPedEvCntr++;
-	} else { // payload
-		if (fPrevEventType == kBMNPEDESTAL) {
-			if (fPedEvCntr >= fEvForPedestals - 1) {
-				fGemMapper->RecalculatePedestals();
-				fSiliconMapper->RecalculatePedestals();
-				fPedEvCntr = 0;
-				fPedEnough = kTRUE;
-			}
-		}
-		if ((fGemMapper) && (fPedEnough)) fGemMapper->FillEvent(adc32, gem);
-		if ((fSiliconMapper) && (fPedEnough)) fSiliconMapper->FillEvent(adc128, silicon);
-		if (fDchMapper) fDchMapper->FillEvent(tdc, &fTimeShifts, dch, fT0Time);
-		if (fMwpcMapper) fMwpcMapper->FillEvent(hrb, mwpc);
-		if (fTof400Mapper) fTof400Mapper->FillEvent(tdc, &fTimeShifts, tof400);
-		if (fTof700Mapper && fT0Time != 0. && fT0Width != -1.) fTof700Mapper->fillEvent(tdc, &fTimeShifts, fT0Time, fT0Width, tof700);
-		if (fZDCMapper) fZDCMapper->fillEvent(adc, zdc);
-		if (fECALMapper) fECALMapper->fillEvent(adc, ecal);
-		if (fLANDMapper) fLANDMapper->fillEvent(tacquila, land);
-	}
-	new((*eventHeader)[eventHeader->GetEntriesFast()]) BmnEventHeader(headDAQ->GetRunId(), headDAQ->GetEventId(), headDAQ->GetEventTime(), fCurEventType, kFALSE, headDAQ->GetTrigInfo());
-	//        fDigiTree->Fill();
-	fPrevEventType = fCurEventType;
-
-	return kBMNSUCCESS;
-}
-
-BmnStatus BmnRawDataDecoder::FinishRun() {
-	Double_t fSize = Double_t(fLengthRawFile / 1024. / 1024.);
-	fRunStartTime = runHeaderDAQ->GetStartTime();
-	fRunEndTime = runHeaderDAQ->GetFinishTime();
-	Int_t nEv = fNevents;
-
-	if (!UniDbRun::GetRun(fPeriodId, fRunId))
-		UniDbRun::CreateRun(fPeriodId, fRunId, fRawFileName, "", NULL, NULL, fRunStartTime, &fRunEndTime, &nEv, NULL, &fSize, NULL);
-
-}
-
-void BmnRawDataDecoder::ResetDecoder(TString file) {
-	fNevents = 0;
-	syncCounter = 0;
-	fRawFileName = file;
-	if (fRawFileIn) {
-		fclose(fRawFileIn);
-		fRawFileIn = NULL;
-	}
-	fRunId = GetRunIdFromFile(fRawFileName);
-	fRawFileIn = fopen(fRawFileName, "rb");
-	if (fRawFileIn == NULL) {
-		printf("\n!!!!!\ncannot open file %s\nConvertRawToRoot are stopped\n!!!!!\n\n", fRawFileName.Data());
-		return;
-	}
-	//    fRootFileOut = new TFile(fRootFileName, "recreate");
-	fseeko64(fRawFileIn, 0, SEEK_END);
-	fLengthRawFile = ftello64(fRawFileIn);
-	rewind(fRawFileIn);
-	printf("\nRawData File %s;\nLength RawData - %lld bytes (%.3f Mb)\n", fRawFileName.Data(), fLengthRawFile, fLengthRawFile / 1024. / 1024.);
-	fRawTree->Reset();
-	fDigiTree->Reset();
-	//    fDigiTree->Branch("EventHeader", &eventHeader);
-	//    //fDigiTree->Branch("RunHeader", &runHeader);
-	//    fDigiTree->Branch("T0", &t0);
-	//    fDigiTree->Branch("BC1", &bc1);
-	//    fDigiTree->Branch("BC2", &bc2);
-	//    fDigiTree->Branch("VETO", &veto);
-	//    fDigiTree->Branch("FD", &fd);
-	//    fDigiTree->Branch("BD", &bd);
-	//    fDigiTree->Branch("DCH", &dch);
-	//    fDigiTree->Branch("GEM", &gem);
-	//    fDigiTree->Branch("TOF400", &tof400);
-	//    fDigiTree->Branch("TOF700", &tof700);
-	//    fDigiTree->Branch("ZDC", &zdc);
-	//    fDigiTree->Branch("ECAL", &ecal);
-	//    fRunId = GetRunIdFromFile(fRawFileName);
-	//    fRootFileName = Form("bmn_run%04d_raw.root", fRunId);
-	//    fDigiFileName = Form("bmn_run%04d_digi.root", fRunId);
-}
 
 BmnStatus BmnRawDataDecoder::DisposeDecoder() {
 	if (fGemMap) delete[] fGemMap;
@@ -1457,7 +1384,7 @@ BmnStatus BmnRawDataDecoder::SlewingTOF700Init() {
 	fDigiTree->Branch("EventHeader", &eventHeader);
 	fNevents = (fMaxEvent > fRawTree->GetEntries() || fMaxEvent == 0) ? fRawTree->GetEntries() : fMaxEvent;
 
-	fTrigMapper = new BmnTrigRaw2Digit(fTrigMapFileName, fTrigINLFileName, fDigiTree);
+	fTrigMapper = new BmnTrigRaw2Digit(fTrigPlaceMapFileName, fTrigDetMapFileName, fTrigINLTQDC1FileName, fTrigINLTQDC2FileName, fTrigINLTDC1FileName, fTrigINLTDC2FileName, fDigiTree );
 	if (fT0Map == NULL) {
 		BmnTrigMapping tm = fTrigMapper->GetT0Map();
 		printf("T0 serial 0x%X got from trig mapping\n", tm.serial);

@@ -28,71 +28,78 @@ using namespace std;
 using namespace TMath;
 
 struct BmnTrigMapping {
-    TString name;
-    UInt_t module;
-    UInt_t serial;
-    Short_t slot;
-    Short_t channel;
-    TClonesArray* branchRef;
-    TClonesArray* branchRefADC;
+	TString name;
+	UInt_t module;
+	UInt_t serial;
+	Short_t slot;
+	Short_t channel;
+	TClonesArray* branchRef;
+	TClonesArray* branchRefADC;
 };
 
 class BmnTrigRaw2Digit {
-public:
-    BmnTrigRaw2Digit(TString mappingFile, TString INLFile);
-    BmnTrigRaw2Digit(TString mappingFile, TString INLFile, TTree *digiTree);
-    BmnTrigRaw2Digit(){}
+	public:
+		BmnTrigRaw2Digit( 	TString TrigPlaceMapFile, 
+					TString TrigDetMapFile	,
+					TString TrigINLTQDC1File,
+					TString TrigINLTQDC2File,
+					TString TrigINLTDC1File	,
+					TString TrigINLTDC2File	,
+					TTree *digiTree );
 
-    ~BmnTrigRaw2Digit() {
-        for (TClonesArray *ar : trigArrays)
-            delete ar;
-    };
+		BmnTrigRaw2Digit(TString mappingFile, TString INLFile);
+		BmnTrigRaw2Digit(TString mappingFile, TString INLFile, TTree *digiTree);
+		BmnTrigRaw2Digit(){}
 
-    vector<BmnTrigMapping>* GetMap() {
-        return &fMap;
-    }
+		~BmnTrigRaw2Digit() {
+			for (TClonesArray *ar : trigArrays)
+				delete ar;
+		};
 
-    BmnStatus FillEvent(TClonesArray *tdc);
-    BmnStatus FillEvent(TClonesArray *tdc, TClonesArray *adc);
-    BmnStatus readINLCorrections(TString INLFile);
-    BmnStatus readMap(TString mappingFile);
-    BmnStatus ClearArrays();
-    
-    vector<TClonesArray*> *GetTrigArrays(){
-        return &trigArrays;
-    }
-        
-    BmnTrigMapping GetT0Map(){        
-        for (BmnTrigMapping tM : fMap){
-            if (tM.name == "T0")
-                return tM;
-        }
-        for (BmnTrigMapping tM : fMap){
-            if (tM.name == "BC2")
-                return tM;
-        }
-        BmnTrigMapping tMno;
-        tMno.serial = 0;
-        return tMno;
-    }
-    
-    void SetSetup(BmnSetup stp) {
-        fSetup = stp;
-    }
+		vector<BmnTrigMapping>* GetMap() {
+			return &fMap;
+		}
 
-private:
+		BmnStatus FillEvent(TClonesArray *tdc);
+		BmnStatus FillEvent(TClonesArray *tdc, TClonesArray *adc);
+		BmnStatus readINLCorrections(TString INLFile , int length, int iden);
+		BmnStatus readMap(TString mappingFile);
+		BmnStatus ClearArrays();
 
-    vector<BmnTrigMapping> fMap;
-    BmnSetup fSetup;
-    ifstream fMapFile;
-    ifstream fINLFile;
-    TString fMapFileName;
-    TString fINLFileName;
-    Float_t fINLTable[72][1024];
-//    TDirectory *fDir;
-    vector<TClonesArray*> trigArrays;
+		vector<TClonesArray*> *GetTrigArrays(){
+			return &trigArrays;
+		}
 
-    ClassDef(BmnTrigRaw2Digit, 1);
+		BmnTrigMapping GetT0Map(){        
+			for (BmnTrigMapping tM : fMap){
+				if (tM.name == "T0")
+					return tM;
+			}
+			BmnTrigMapping tMno;
+			tMno.serial = 0;
+			return tMno;
+		}
+
+		void SetSetup(BmnSetup stp) {
+			fSetup = stp;
+		}
+
+	private:
+
+		vector<BmnTrigMapping> fMap;
+		BmnSetup fSetup;
+		ifstream fMapFile;
+		ifstream fINLFile;
+		TString fMapFileName;
+		TString fINLFileName;
+		Float_t fINLTable72[72][1024];
+		Float_t fINLTable32[32][1024];
+		Float_t fINLTable16_1[16][1024];
+		Float_t fINLTable16_2[16][1024];
+		//    TDirectory *fDir;
+		vector<TClonesArray*> trigArrays;
+
+		ClassDef(BmnTrigRaw2Digit, 1);
 };
 
 #endif /* BMNTRIGRAWTODIGIT_H */
