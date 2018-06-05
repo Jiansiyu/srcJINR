@@ -34,7 +34,6 @@ struct BmnTrigMapping {
 	Short_t slot;
 	Short_t channel;
 	TClonesArray* branchRef;
-	TClonesArray* branchRefADC;
 };
 
 class BmnTrigRaw2Digit {

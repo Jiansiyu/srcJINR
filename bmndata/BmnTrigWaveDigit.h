@@ -19,59 +19,65 @@
 
 
 class BmnTrigWaveDigit: public TNamed {// BmnTrigDigit /*, public BmnADCSRCDigit */ {
-public:
-    BmnTrigWaveDigit();
-//    BmnTrigWaveDigit(/*BmnTrigDigit *trigDigit, */BmnTQDCADCDigit *adcDigit);
-    BmnTrigWaveDigit(Short_t iMod, Short_t *iValue, UInt_t nVals, Double_t trigTimestamp, Double_t adcTimestamp);
-    
-    Short_t GetMod() const {
-        return fMod;
-    }
-    
-    UInt_t GetNSamples() const {
-        return fNsmpl;
-    }
-   
-    int GetIntegral() const {
-	int spectra = 0;
-	for (Int_t i = 0; i < fNsmpl; ++i)
-		spectra += fValueI[i];
-	return spectra;
-    }    
-    
-    int GetPeak() const {
-	int peak = -100000;
-	for (Int_t i = 0; i < fNsmpl; ++i)
-		if ( fValueI[i] > peak ) peak = fValueI[i];
-	return peak;
-    }
+	public:
+		BmnTrigWaveDigit();
+		//    BmnTrigWaveDigit(/*BmnTrigDigit *trigDigit, */BmnTQDCADCDigit *adcDigit);
+		BmnTrigWaveDigit(Short_t iMod, Short_t *iValue, UInt_t nVals, Double_t trigTimestamp, Double_t adcTimestamp, Double_t time);
 
-    Short_t *GetShortValue() const {
-        return (Short_t *) fValueI;
-    }
+		Short_t GetMod() const {
+			return fMod;
+		}
 
-    void SetShortValue(Short_t *iValue) const {
-        for (Int_t i = 0; i < fNsmpl; ++i)
-            fValueI[i] = iValue[i];
-    }
-    
-    Double_t GetAdcTimestamp() const {
-        return fAdcTimestamp;
-    }
-    
-    Double_t GetTrigTimestamp() const {
-        return fTrigTimestamp;
-    }
-    
-    virtual ~BmnTrigWaveDigit();
-protected:
-    Short_t fMod;
-    UInt_t fNsmpl;
-    Short_t* fValueI; //[fNsmpl]
-    Double_t fTrigTimestamp;
-    Double_t fAdcTimestamp;
+		UInt_t GetNSamples() const {
+			return fNsmpl;
+		}
 
-    ClassDef(BmnTrigWaveDigit, 1);
+		int GetIntegral() const {
+			int spectra = 0;
+			for (Int_t i = 0; i < fNsmpl; ++i)
+				spectra += fValueI[i];
+			return spectra;
+		}    
+
+		int GetPeak() const {
+			int peak = -100000;
+			for (Int_t i = 0; i < fNsmpl; ++i)
+				if ( fValueI[i] > peak ) peak = fValueI[i];
+			return peak;
+		}
+
+		Short_t *GetShortValue() const {
+			return (Short_t *) fValueI;
+		}
+
+		void SetShortValue(Short_t *iValue) const {
+			for (Int_t i = 0; i < fNsmpl; ++i)
+				fValueI[i] = iValue[i];
+		}
+
+		Double_t GetAdcTimestamp() const {
+			return fAdcTimestamp;
+		}
+
+		Double_t GetTrigTimestamp() const {
+			return fTrigTimestamp;
+		}
+	
+		Double_t GetTime() const{
+			return fTime;
+		}
+
+
+		virtual ~BmnTrigWaveDigit();
+	protected:
+		Short_t fMod;
+		UInt_t fNsmpl;
+		Short_t* fValueI; //[fNsmpl]
+		Double_t fTrigTimestamp;
+		Double_t fAdcTimestamp;
+		Double_t fTime;
+
+		ClassDef(BmnTrigWaveDigit, 1);
 };
 
 #endif /* BMNTRIGWAVEDIGIT_H */

@@ -521,9 +521,11 @@ BmnStatus BmnRawDataDecoder::Process_FVME(UInt_t *d, UInt_t len, UInt_t serial, 
 		switch (type) {
 			// Data structure follows: SpillHead, then EventHead, then ModuleHead, then DATA, then ModuleTrail, then EventTrail, then SpillTrail
 			case kSPILLHEADER:
+				//printf("Spill header\n");
 				if( (d[i] >> 27) & 0x1 ) printf(ANSI_COLOR_RED "SPILL type is end of spill\n" ANSI_COLOR_RESET);
 				break;
 			case kEVHEADER:
+				//printf("Event header\n");
 				// Seems like the event number int(d[i] & 0x7FFFF) at first follows fEventId but then
 				// gets reset every now and then?
 				break;
@@ -531,9 +533,11 @@ BmnStatus BmnRawDataDecoder::Process_FVME(UInt_t *d, UInt_t len, UInt_t serial, 
 				// While they are both reset, this seems to match event number from event header.
 				// Event number here is given by: int(d[i] & 0x7FFF)
 				modId = (d[i] >> 16) & 0x7F;
+				//printf("module header %04x\n",modId);
 				slot = (d[i] >> 23) & 0x1F;
 				break;
 			case kMODTRAILER:
+				//printf("module trailer\n");
 				// Reset module ID and module slot after we see module trailer
 				if( !((d[i] >> 16) & 0x1) ) printf(ANSI_COLOR_RED "Readout overflow error\n" ANSI_COLOR_RESET);
 				//if( !((d[i] >> 17) & 0x1) ) printf(ANSI_COLOR_RED "Readout error\n" ANSI_COLOR_RESET);
@@ -543,13 +547,17 @@ BmnStatus BmnRawDataDecoder::Process_FVME(UInt_t *d, UInt_t len, UInt_t serial, 
 				slot = 0x00;
 				break;
 			case kEVTRAILER:
+				//printf("event trailer\n");
 				break;
 			case kSPILLTRAILER:
+				//printf("spill trailer\n");
 				if( (d[i] >> 27) & 0x1 ) printf(ANSI_COLOR_RED "SPILL type is end of spill\n" ANSI_COLOR_RESET);
 				break;
 			case kSTATUS:
+				//printf("status\n");
 				break;
 			case kPADDING:
+				//printf("padding\n");
 				break;
 			case 0x0:
 			case 0x1:
@@ -581,6 +589,7 @@ BmnStatus BmnRawDataDecoder::Process_FVME(UInt_t *d, UInt_t len, UInt_t serial, 
 						case kTRIG: // this one is okay; bit silly it doesn't return an index
 							    // past the ones it's read, but it's fine because there is
 							    // a catch statment for trailers above..
+							//printf("Sync\n");
 							FillSYNC(d, serial, i);
 							break;
 						case kU40VE_RC: // This one freaks me out because he skips ahead 5 sometimes??
@@ -709,7 +718,6 @@ BmnStatus BmnRawDataDecoder::FillU40VE(UInt_t *d, BmnEventType &evType, UInt_t s
 	UInt_t type = d[idx] >> 28;
 	Bool_t countersDone = kFALSE;
 	while (type == 2 || type == 3 || type == 4) {
-		
 		if( ( (type == 3) && (slot == 12) ) ){
 			if( !((d[idx] >> 16) & 0x1)){
 				printf(ANSI_COLOR_RED "ERROR: Trigger source NOT external!\n" ANSI_COLOR_RESET);
@@ -781,13 +789,11 @@ BmnStatus BmnRawDataDecoder::FillTQDC(UInt_t *d, UInt_t serial, UInt_t slot, UIn
 
 
 		if ( type == 2 ){ //TDC event header
-			//printf("TDC event header\n");
 			UInt_t tdcTimeStamp = (d[idx] & 0xFFF);
 			UInt_t tdcEvN	     = (d[idx] >> 12) & 0xFFF;
 		}
 		
 		else if( ( mode == 0 ) && ( (type == 4) || (type == 5) ) ){ // TDC Data
-			//printf("TDC data\n");
 			channel = (d[idx] >> 19) & 0x1F;
 			UInt_t time = ((d[idx] & 0x7FFFF) << 2) | ((d[idx] >> 24) & 0x3);
 			// type here doesn't matter because it's not leading vs trailing, only single edge leading
@@ -1035,16 +1041,17 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 		*/
 
 		if (fTrigMapper) {
-			//fTrigMapper->FillEvent(tqdc_tdc, tqdc_adc);
+			fTrigMapper->FillEvent(tqdc_tdc, tqdc_adc);
 			fTrigMapper->FillEvent(tdc);
 		}
 
-		/*
 		fT0Time = 0.;
 		GetT0Info(fT0Time, fT0Width);
+		Bool_t isTripEvent = kFALSE;
 		new((*eventHeader)[eventHeader->GetEntriesFast()]) BmnEventHeader(headDAQ->GetRunId(), headDAQ->GetEventId(), headDAQ->GetEventTime(), curEventType, isTripEvent, headDAQ->GetTrigInfo(), fTimeShifts);
 		BmnEventHeader* evHdr = (BmnEventHeader*) eventHeader->At(eventHeader->GetEntriesFast() - 1);
 		evHdr->SetStartSignalInfo(fT0Time, fT0Width);
+		/*
 
 		//if (t0->GetEntriesFast() != 1 || bc2->GetEntriesFast() != 1) continue;
 		if (curEventType == kBMNPEDESTAL) {

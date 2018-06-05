@@ -63,7 +63,6 @@ BmnStatus BmnTrigRaw2Digit::readMap(TString mappingFile) { // in mapping TQDC ch
 		if (!fMapFile.good()) break;
 		BmnTrigMapping record;
 		record.branchRef = NULL;
-		record.branchRefADC = NULL;
 		record.name = name;
 		record.serial = ser;
 		record.module = mod;
@@ -157,36 +156,80 @@ BmnStatus BmnTrigRaw2Digit::readINLCorrections(TString INLFile, int length, int 
 	return kBMNSUCCESS;
 }
 
-
 BmnStatus BmnTrigRaw2Digit::FillEvent(TClonesArray *tdc, TClonesArray *adc) {
+	std::vector<double> times;
+	std::vector<double> diff;
 	for (Int_t iMap = 0; iMap < fMap.size(); ++iMap) {
 		BmnTrigMapping tM = fMap[iMap];
 		Short_t iMod = tM.module;
 		TClonesArray *trigAr = tM.branchRef;
-		TClonesArray *trigArADC = tM.branchRefADC;
-		if (trigAr)
+
+		// Matching of ADC/TDC based on the fact that (TDC_i - TDC_j) > 296ns correspond to different ADC
+		// and (TDC_i - (ADC_i - Trig_i) ) ~ 0
+		// 
+		// However, it is possible that not all ADC's will have a TDC
+		
+		for (Int_t iAdc = 0; iAdc < adc->GetEntriesFast(); iAdc++) {
+			times.clear();
+			diff.clear();
+			BmnTQDCADCDigit *adcDig = (BmnTQDCADCDigit*) adc->At(iAdc);
+			if (adcDig->GetSerial() != tM.serial || adcDig->GetSlot() != tM.slot) continue;
+			if (adcDig->GetChannel() != tM.channel) continue;
+			Double_t adcTimestamp = adcDig->GetAdcTimestamp() * ADC_CLOCK_TQDC16VS;
+			Double_t trgTimestamp = adcDig->GetTrigTimestamp() * ADC_CLOCK_TQDC16VS;
+
 			for (Int_t iTdc = 0; iTdc < tdc->GetEntriesFast(); ++iTdc) {
 				BmnTDCDigit* tdcDig = (BmnTDCDigit*) tdc->At(iTdc);
 				if (tdcDig->GetSerial() != tM.serial || tdcDig->GetSlot() != tM.slot) continue;
 				if (tdcDig->GetChannel() != tM.channel) continue;
-				Double_t time = tdcDig->GetValue() * TDC_CLOCK / 1024;
+				
+				// Now of all the TDCs, find the TDC for which (TDC - trgTime + adcTime) ~ 0 within
+				// some tolerance. The closest to 0 is our nominal TDC. And any nearby TDCs between 296ns
+				// belong to the same ADC			
+				double time = - 666.;
+				if( tM.slot == 13)
+					time = (tdcDig->GetValue() + fINLTable16_1[tM.channel][tdcDig->GetValue() % 1024]) * TDC_CLOCK / 1024;
+				else if( tM.slot == 14)
+					time = (tdcDig->GetValue() + fINLTable16_2[tM.channel][tdcDig->GetValue() % 1024]) * TDC_CLOCK / 1024;
+				else{ printf("CRIT ERROR\n"); }				
+
 				Double_t tdcTimestamp = tdcDig->GetTimestamp() * TDC_CLOCK;
-				new ((*trigAr)[trigAr->GetEntriesFast()]) BmnTrigDigit(iMod, time, -1.0, tdcTimestamp);
+				diff.push_back(fabs(time - (adcTimestamp - trgTimestamp)));
+				times.push_back(time);
+
 			}
-		if (trigArADC)
-			for (Int_t iAdc = 0; iAdc < adc->GetEntriesFast(); iAdc++) {
-				BmnTQDCADCDigit *adcDig = (BmnTQDCADCDigit*) adc->At(iAdc);
-				if (adcDig->GetSerial() != tM.serial || adcDig->GetSlot() != tM.slot) continue;
-				if (adcDig->GetChannel() != tM.channel) continue;
-				Double_t adcTimestamp = adcDig->GetAdcTimestamp() * ADC_CLOCK_TQDC16VS;
-				Double_t trgTimestamp = adcDig->GetTrigTimestamp() * ADC_CLOCK_TQDC16VS;
-				new ((*trigArADC)[trigArADC->GetEntriesFast()]) BmnTrigWaveDigit(
+			
+			if( diff.size() > 0){
+				std::vector<double>::iterator result = std::min_element( std::begin(diff) , std::end(diff) );
+				int idx = std::distance(std::begin(diff) , result);
+		
+				// Found the match, so let's save that as and ADC and corresponding TDC
+				double matchTime = times.at(idx);
+				double minUsed = diff.at(idx);
+				if( minUsed  > 300) matchTime = -666.;  // no TDC for this corresponding ADC
+			
+				new ((*trigAr)[trigAr->GetEntriesFast()]) BmnTrigWaveDigit(
 						iMod,
 						adcDig->GetShortValue(),
 						adcDig->GetNSamples(),
 						trgTimestamp,
-						adcTimestamp);
+						adcTimestamp,
+						matchTime);
 			}
+			else{
+				double matchTime = -666.;  // no TDC for this corresponding ADC
+			
+				new ((*trigAr)[trigAr->GetEntriesFast()]) BmnTrigWaveDigit(
+						iMod,
+						adcDig->GetShortValue(),
+						adcDig->GetNSamples(),
+						trgTimestamp,
+						adcTimestamp,
+						matchTime);
+			
+			}
+		}
+
 	}
 	return kBMNSUCCESS;
 }
