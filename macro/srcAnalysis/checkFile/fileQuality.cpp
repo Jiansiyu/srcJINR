@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -25,7 +26,7 @@ int main(int argc, char ** argv)
 	if (argc !=2)
 	{
 		cerr << "Wrong number of arguments. Instead use\n"
-			<< "\tidentify12C /path/to/digi/file\n";
+			<< "\tfileQuality /path/to/digi/file\n";
 		return -1;
 	}
 
@@ -227,6 +228,15 @@ int main(int argc, char ** argv)
 	cout << "T0 Rate:\t" << rateT0 << "\n";
 	cout << "**********************************************\n\n";
 	
+	string outname = string(argv[1]);
+	outname = "/home/segarrae/software/srcJINR/build/bin/checked-" + outname.substr(outname.find(".") - 9 , 4) + ".txt";
+	ofstream outfile(outname.c_str());
+	outfile << pedBC1 << "\t" << pedBC2 << "\t" << pedBC3 << "\t" << pedBC4 << "\n"
+		<< fit2->Parameter(1) << "\t" << fit2->Parameter(2) << "\t" << fit2O->Parameter(1) << "\t" << fit2O->Parameter(2) << "\n";
+
+	outfile.close();
+
+
 
 	outTree->Write();
 	outFile->Close();

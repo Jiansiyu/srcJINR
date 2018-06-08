@@ -24,8 +24,8 @@ set(LINK_DIRECTORIES
 
 link_directories(${LINK_DIRECTORIES})
 
-add_executable(calcPedestals calcPedestals.cpp)
-target_link_libraries(calcPedestals BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+add_executable(prepResolution prepResolution.cpp)
+target_link_libraries(prepResolution BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
 
-add_executable(fileQuality fileQuality.cpp)
-target_link_libraries(fileQuality BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+add_executable(resolution resolution.cpp)
+target_link_libraries(resolution BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
