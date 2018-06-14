@@ -35,7 +35,7 @@ int main(int argc, char ** argv)
 	
 	// Attempt to find a matchin pedestal file:
 	TFile * infile_ped = NULL;
-	TString path = "/home/segarrae/software/srcJINR/build/bin/tqdcPedestals" + run_number + ".root";
+	TString path = "/home/segarrae/software/srcJINR/build/bin/qualityCheck/tqdcPedestals" + run_number + ".root";
 	infile_ped = new TFile(path);
 	if (!infile_ped){
 		cerr << "Could not open file " << path <<"\n"
@@ -91,7 +91,9 @@ int main(int argc, char ** argv)
 
 
 	// Setup an output file and tree
-	TFile * outFile = new TFile("carbonIn.root","RECREATE");
+	TString outName;
+	outName.Form("qualityCheck/pedSub_spectra_"+run_number+".root");
+	TFile * outFile = new TFile(outName,"RECREATE");
 	TTree * outTree = new TTree("events","");
 	double adcBC1, adcBC2, adcBC3, adcBC4;
 	double tBC1, tBC2, tBC3, tBC4;
@@ -229,7 +231,7 @@ int main(int argc, char ** argv)
 	cout << "**********************************************\n\n";
 	
 	string outname = string(argv[1]);
-	outname = "/home/segarrae/software/srcJINR/build/bin/checked-" + outname.substr(outname.find(".") - 9 , 4) + ".txt";
+	outname = "/home/segarrae/software/srcJINR/build/bin/qualityCheck/checked-" + outname.substr(outname.find(".") - 9 , 4) + ".txt";
 	ofstream outfile(outname.c_str());
 	outfile << pedBC1 << "\t" << pedBC2 << "\t" << pedBC3 << "\t" << pedBC4 << "\n"
 		<< fit2->Parameter(1) << "\t" << fit2->Parameter(2) << "\t" << fit2O->Parameter(1) << "\t" << fit2O->Parameter(2) << "\n";

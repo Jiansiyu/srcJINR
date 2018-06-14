@@ -46,7 +46,7 @@ int main(int argc, char ** argv)
 	TString run_number( file(file.Index(".")-9,4) );
 	// Setup output file
 	
-	TFile * outFile = new TFile("tqdcPedestals"+run_number+".root","RECREATE");
+	TFile * outFile = new TFile("qualityCheck/tqdcPedestals"+run_number+".root","RECREATE");
 	TH1D * BC1_ped = new TH1D("BC1_ped","BC1_ped",4500,-500,4000);
 	TH1D * BC2_ped = new TH1D("BC2_ped","BC2_ped",4500,-500,4000);
 	TH1D * BC3_ped = new TH1D("BC3_ped","BC3_ped",4500,-500,4000);

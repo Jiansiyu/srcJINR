@@ -43,7 +43,7 @@ int main(int argc, char ** argv)
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Open up the checkedRun file to grab pedestals and where carbon peak is:
-	string openName = "/home/segarrae/software/srcJINR/build/bin/checked-" + run_number + ".txt";
+	string openName = "/home/segarrae/software/srcJINR/build/bin/qualityCheck/checked-" + run_number + ".txt";
 	ifstream params (openName);
 	if( params.is_open() ){
 		params >> pedBC1 >> pedBC2 >> pedBC3 >> pedBC4;
@@ -58,7 +58,7 @@ int main(int argc, char ** argv)
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Open up the time-walk function parameters for MCP2, MCP3, T03
 	double mcp2_par0, mcp2_par1, mcp3_par0, mcp3_par1, t03_par0, t03_par1;
-	openName = "/home/segarrae/software/srcJINR/build/bin/mcp2_mcp3_t03-timeWlkParam.txt";
+	openName = "/home/segarrae/software/srcJINR/build/bin/timeWalk/fitFuncs/mcp2_mcp3_t03-timeWlkParam.txt";
 	ifstream wlk (openName);
 	if( wlk.is_open() ){
 		string junk;
@@ -107,7 +107,7 @@ int main(int argc, char ** argv)
 
 
 	// Setup output file
-	TFile * outFile = new TFile("resolution-forT0.root","RECREATE");
+	TFile * outFile = new TFile("sk_T0.root","RECREATE");
 	TTree * outTree = new TTree("events","");
 	double tdiff_t0_mcp2, mcp2_wi;
 	double tdiff_t0_mcp3, mcp3_wi;

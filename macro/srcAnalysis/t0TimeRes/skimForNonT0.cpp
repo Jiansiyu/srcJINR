@@ -36,7 +36,7 @@ int main(int argc, char ** argv)
 	string run_number = file.substr( file.find(".")-9 , 4  );
 	
 	// Open up the checkedRun file to grab pedestals and where carbon peak is:
-	string openName = "/home/segarrae/software/srcJINR/build/bin/checked-" + run_number + ".txt";
+	string openName = "/home/segarrae/software/srcJINR/build/bin/qualityCheck/checked-" + run_number + ".txt";
 	ifstream params (openName);
 	double pedBC1, pedBC2, pedBC3, pedBC4;
 	double C12in_mean, C12out_mean, C12in_sig, C12out_sig;
@@ -88,7 +88,7 @@ int main(int argc, char ** argv)
 
 
 	// Setup output file
-	TFile * outFile = new TFile("resolution.root","RECREATE");
+	TFile * outFile = new TFile("sk_noT0.root","RECREATE");
 	TTree * outTree = new TTree("events","");
 	double tdiff_t0_mcp2, width_mcp2;
 	double tdiff_t0_mcp3, width_mcp3;

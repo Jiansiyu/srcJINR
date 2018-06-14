@@ -240,7 +240,7 @@ int main(int argc, char ** argv)
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Read in the original file to show the improvement
-	TFile * inDigi = new TFile("resolution-noCuts.root");
+	TFile * inDigi = new TFile("sk_noT0-noCuts.root");
 	TTree * inDigT = (TTree *)inDigi->Get("events");
 	
 	double t_t0_mcp2, 	w_mcp2;
@@ -411,7 +411,7 @@ int main(int argc, char ** argv)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Save fits to file
-	ofstream outfile("/home/segarrae/software/srcJINR/build/bin/mcp2_mcp3_t03-timeWlkParam.txt");
+	ofstream outfile("/home/segarrae/software/srcJINR/build/bin/timeWalk/fitFuncs/t0-timeWlkParam.txt");
 	outfile << mcp2_par0 << "\t" << mcp2_par1 << "\n"
 		<< mcp3_par0 << "\t" << mcp3_par1 << "\n"
 		<<  t03_par0 << "\t" <<  t03_par1 << "\n";
@@ -483,7 +483,7 @@ void walkCorr(	std::vector<double> *widths		,
 	int currBin = 0;
 	while( currBin < 2000){
 		double xPt, yPt, yEr, ySig, ySigEr;
-		int step = doProj( hist , currBin , true , 0, xPt, yPt, yEr, ySig, ySigEr );
+		int step = doProj( hist , currBin , false , 0, xPt, yPt, yEr, ySig, ySigEr );
 		currBin += step ;
 		if( xPt > widthCut) continue;
 		widths		->push_back(xPt);

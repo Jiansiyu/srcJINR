@@ -226,7 +226,7 @@ int main(int argc, char ** argv)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Save fits to file
-	ofstream outfile("/home/segarrae/software/srcJINR/build/bin/mcp2_mcp3_t03-timeWlkParam.txt");
+	ofstream outfile("/home/segarrae/software/srcJINR/build/bin/timeWalk/fitFuncs/mcp2_mcp3_t03-timeWlkParam.txt");
 	outfile << mcp2_par0 << "\t" << mcp2_par1 << "\n"
 		<< mcp3_par0 << "\t" << mcp3_par1 << "\n"
 		<<  t03_par0 << "\t" <<  t03_par1 << "\n";

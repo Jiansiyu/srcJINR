@@ -22,6 +22,9 @@ set(LINK_DIRECTORIES
  ${GSL_LIBRARY_DIRS}
 )
 
+
+set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin/timeWalk")
+
 link_directories(${LINK_DIRECTORIES})
 
 add_executable(skimForNonT0 skimForNonT0.cpp)
