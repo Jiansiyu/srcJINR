@@ -27,7 +27,7 @@ int main(int argc, char ** argv)
 	if (argc !=2)
 	{
 		cerr << "Wrong number of arguments. Instead use\n"
-			<< "\tprepResolution /path/to/digi/file\n";
+			<< "\tskimForNonT0 /path/to/digi/file\n";
 		return -1;
 	}
 
@@ -68,6 +68,8 @@ int main(int argc, char ** argv)
 	
 	TClonesArray * t0Data 		= new TClonesArray("BmnTrigDigit");	// This is the T0 LVDS signal
 	TClonesArray * t0AnaData	= new TClonesArray("BmnTrigDigit");	// This is the T0 analog signal to TDC
+	TClonesArray * mcp1Data 	= new TClonesArray("BmnTrigDigit");	// This is MCP-1 signal
+	TClonesArray * mcp4Data 	= new TClonesArray("BmnTrigDigit");	// This is MCP-4 signal
 	TClonesArray * mcp2Data 	= new TClonesArray("BmnTrigDigit");	// This is MCP-2 signal
 	TClonesArray * mcp3Data 	= new TClonesArray("BmnTrigDigit");	// This is MCP-3 signal (has more events than MCP-2
 	TClonesArray * t03Data	 	= new TClonesArray("BmnTrigDigit");	// This is BMN-T0 signal
@@ -79,6 +81,8 @@ int main(int argc, char ** argv)
 	inTree->SetBranchAddress("T0"		,&t0Data	);
 	inTree->SetBranchAddress("T0Analog"	,&t0AnaData	);
 	inTree->SetBranchAddress("T03"		,&t03Data	);
+	inTree->SetBranchAddress("MCP1"		,&mcp1Data	);
+	inTree->SetBranchAddress("MCP4"		,&mcp4Data	);
 	inTree->SetBranchAddress("MCP2"		,&mcp2Data	);
 	inTree->SetBranchAddress("MCP3"		,&mcp3Data	);
 
@@ -91,6 +95,7 @@ int main(int argc, char ** argv)
 	double tdiff_t0_t03 , width_t03	;
 	double tdiff_t0_t0Ana, width_t0Ana;
 	double tdiff_t0_t0Tqdc, width_t0Tqdc;	
+	double t0Width;
 
 	outTree->Branch("t0_mcp2"	,&tdiff_t0_mcp2		,"t0_mcp2/D");
 	outTree->Branch("mcp2_wi"	,&width_mcp2		,"mcp2_wi/D");
@@ -107,6 +112,7 @@ int main(int argc, char ** argv)
 	outTree->Branch("t0_t0Tqdc"	,&tdiff_t0_t0Tqdc	,"t0_t0Tqdc/D");
 	outTree->Branch("t0Tqdc_wi"	,&width_t0Tqdc		,"t0Tqdc_wi/D");
 
+	outTree->Branch("t0_wi"		,&t0Width		,"t0_wi/D");
 
 	// Before hand, let's calculate the peak of the T0 width
 	TH1D * h = new TH1D("trash","trash",1000,0,100);
@@ -124,6 +130,8 @@ int main(int argc, char ** argv)
 
 	const int nEvents = inTree->GetEntries();
 	double cnt = 0.;
+	double cnt_t0andMCP1 = 0.;
+	double cnt_t0andMCP4 = 0.;
 	double cnt_t0andMCP2 = 0.;
 	double cnt_t0andMCP3 = 0.;
 	double cnt_t0andt03 = 0.;
@@ -150,6 +158,8 @@ int main(int argc, char ** argv)
 		t03Data	->	Clear();
 		mcp2Data->	Clear();
 		mcp3Data->	Clear();
+		mcp1Data->	Clear();
+		mcp4Data->	Clear();
 
 		inTree->GetEvent(event);
 		
@@ -157,7 +167,7 @@ int main(int argc, char ** argv)
 		if( t0Data->GetEntriesFast() != 1) continue;
 		BmnTrigDigit * t0Signal = (BmnTrigDigit*) t0Data->At(0);
 		double t0Time = t0Signal->GetTime();
-		double t0Width = t0Signal->GetAmp();
+		t0Width = t0Signal->GetAmp();
 
 		// Now cut on Carbon-in-Carbon-out:
 		if( bc1Data->GetEntriesFast() && bc2Data->GetEntriesFast() && bc3Data->GetEntriesFast() && bc4Data->GetEntriesFast() ){
@@ -181,8 +191,11 @@ int main(int argc, char ** argv)
 		}
 	
 		// First let's cut on T0 width to take out any T0 time-walk dependence		
-		if( fabs( t0Width - t0Wid_peak) > 0.1) continue;
+		if( fabs( t0Width - t0Wid_peak) > 0.05) continue;
 		cnt++;
+
+		if( mcp1Data->GetEntriesFast() ) cnt_t0andMCP1++;
+		if( mcp4Data->GetEntriesFast() ) cnt_t0andMCP4++;
 
 		// Now with a good quality-control cut, we can look at time resolution
 		// 	Look at MCP
@@ -235,9 +248,11 @@ int main(int argc, char ** argv)
 		outTree->Fill();	
 	}
 
-	cout 	<< cnt << " " 
-		<< cnt_t0andMCP2 << " " << cnt_t0andMCP3 << " " << cnt_t0andt03 << " " 
-		<< cnt_t0andt0Ana<< " " << cnt_t0andTqdc << "\n";
+	cout 	<< cnt/nEvents << " " 
+		<< cnt_t0andMCP1/nEvents << " " << cnt_t0andMCP2/nEvents << " " 
+		<< cnt_t0andMCP3/nEvents << " " << cnt_t0andMCP4/nEvents << " "
+		<< cnt_t0andt03/nEvents  << " "
+		<< cnt_t0andt0Ana	 << " " << cnt_t0andTqdc << "\n";
 
 
 	outFile->cd();

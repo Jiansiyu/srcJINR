@@ -24,8 +24,14 @@ set(LINK_DIRECTORIES
 
 link_directories(${LINK_DIRECTORIES})
 
-add_executable(prepResolution prepResolution.cpp)
-target_link_libraries(prepResolution BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+add_executable(skimForNonT0 skimForNonT0.cpp)
+target_link_libraries(skimForNonT0 BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
 
-add_executable(resolution resolution.cpp)
-target_link_libraries(resolution BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+add_executable(skimForT0 skimForT0.cpp)
+target_link_libraries(skimForT0 BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+
+add_executable(nonT0-timewalk nonT0-timewalk.cpp)
+target_link_libraries(nonT0-timewalk BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+
+add_executable(T0_timewalk T0_timewalk.cpp)
+target_link_libraries(T0_timewalk BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
