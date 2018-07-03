@@ -441,7 +441,7 @@ void BmnTof1Raw2Digit::FillEvent(TClonesArray *data, map<UInt_t, Long64_t> *mapT
 		}
 		*/
 		double timeFromDigit = (si->GetValue() + par->INL[rchan][(si->GetValue()) % TOF1_BIN_NUMBER])* TOF1_MAX_TIME / double(TOF1_BIN_NUMBER);
-		
+		//cout << si->GetValue()* TOF1_MAX_TIME / double(TOF1_BIN_NUMBER) << " " << (par->INL[rchan][(si->GetValue()) % TOF1_BIN_NUMBER])* TOF1_MAX_TIME / double(TOF1_BIN_NUMBER) << "\n";
 		if(si->GetLeading()) {
 			//If this is a leading TDC digit, just fill the temporary time in the BmnTof1TDCParameters.
 			par->t[rchan] = timeFromDigit;

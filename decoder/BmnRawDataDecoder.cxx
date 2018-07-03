@@ -1154,6 +1154,39 @@ BmnStatus BmnRawDataDecoder::InitDecoder() {
 			if (fTof400PlaceMapFileName.Sizeof() > 1 && fTof400StripMapFileName.Sizeof() > 1) {
 				TString dir = Form("%s%s", getenv("VMCWORKDIR"), "/input/");
 				fTof400Mapper->setMapFromFile(dir + fTof400PlaceMapFileName.Data(), dir + fTof400StripMapFileName.Data());
+				string strDir = std::getenv("VMCWORKDIR");
+				strDir += "/input/";
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-07A8-DEB2.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076D-180A.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076D-16A8.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076C-CF6E.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076C-CF62.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076C-CF5F.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076C-CF56.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076C-AEF6.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076C-AE7B.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076C-AE7A.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076C-AD53.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-076C-AD52.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-F5CB.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-E4B0.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-DA9D.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-DA92.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-DA91.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-DA86.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-40BE.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-40B2.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-40B1.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-404B.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-404A.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-403F.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-403E.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-4033.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-4032.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-06E9-043C.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-046F-408C.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-046F-3872.ini");
+				fTof400Mapper->setINLFromFile(strDir + "TDC72VHL-046F-332F.ini");
 			} else
 				cout << "Map for TOF400 are not loaded" << endl;
 		}
