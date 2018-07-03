@@ -35,7 +35,8 @@ int main(int argc, char ** argv)
 	
 	// Attempt to find a matchin pedestal file:
 	TFile * infile_ped = NULL;
-	TString path = "/home/segarrae/software/srcJINR/build/bin/qualityCheck/tqdcPedestals" + run_number + ".root";
+	TString path = std::getenv("VMCWORKDIR");
+	path = path + "/build/bin/qualityCheck/tqdcPedestals" + run_number + ".root";
 	infile_ped = new TFile(path);
 	if (!infile_ped){
 		cerr << "Could not open file " << path <<"\n"
@@ -186,7 +187,9 @@ int main(int argc, char ** argv)
 
 	// Look at the BC1-BC2 carbon-in peak and the fraction of events in that peak vs total events
 	outTree->Draw("sqrt( adcBC1 * adcBC2 ) >>trash");
-	TFitResultPtr fit = h->Fit("gaus","QES",0,4000);
+	int s = h->GetXaxis()->GetBinCenter( h->GetMaximumBin() - 40);
+	int e = h->GetXaxis()->GetBinCenter( h->GetMaximumBin() + 40);
+	TFitResultPtr fit = h->Fit("gaus","QES","", s, e);
 	double mean = fit->Parameter(1);
 	double sig = fit->Parameter(2);
 	double maxX = mean + 1.*sig;
@@ -231,7 +234,8 @@ int main(int argc, char ** argv)
 	cout << "**********************************************\n\n";
 	
 	string outname = string(argv[1]);
-	outname = "/home/segarrae/software/srcJINR/build/bin/qualityCheck/checked-" + outname.substr(outname.find(".") - 9 , 4) + ".txt";
+	string init = std::getenv("VMCWORKDIR");
+	outname = init + "/build/bin/qualityCheck/checked-" + outname.substr(outname.find(".") - 9 , 4) + ".txt";
 	ofstream outfile(outname.c_str());
 	outfile << pedBC1 << "\t" << pedBC2 << "\t" << pedBC3 << "\t" << pedBC4 << "\n"
 		<< fit2->Parameter(1) << "\t" << fit2->Parameter(2) << "\t" << fit2O->Parameter(1) << "\t" << fit2O->Parameter(2) << "\n";

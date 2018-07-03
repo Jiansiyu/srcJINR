@@ -1046,36 +1046,36 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 		}
 
 		fT0Time = 0.;
+		fT0Width = -1.;
 		GetT0Info(fT0Time, fT0Width);
 		Bool_t isTripEvent = kFALSE;
 		new((*eventHeader)[eventHeader->GetEntriesFast()]) BmnEventHeader(headDAQ->GetRunId(), headDAQ->GetEventId(), headDAQ->GetEventTime(), curEventType, isTripEvent, headDAQ->GetTrigInfo(), fTimeShifts);
 		BmnEventHeader* evHdr = (BmnEventHeader*) eventHeader->At(eventHeader->GetEntriesFast() - 1);
 		evHdr->SetStartSignalInfo(fT0Time, fT0Width);
-		/*
 
-		//if (t0->GetEntriesFast() != 1 || bc2->GetEntriesFast() != 1) continue;
+		
 		if (curEventType == kBMNPEDESTAL) {
 			if (fPedEvCntr == fEvForPedestals - 1) continue;
-			CopyDataToPedMap(adc32, adc128, fPedEvCntr);
+			//CopyDataToPedMap(adc32, adc128, fPedEvCntr);
 			fPedEvCntr++;
 		} else { // payload
 			if (prevEventType == kBMNPEDESTAL && fPedEvCntr == fEvForPedestals - 1) {
-				if (fGemMapper) fGemMapper->RecalculatePedestals();
-				if (fSiliconMapper) fSiliconMapper->RecalculatePedestals();
+				//if (fGemMapper) fGemMapper->RecalculatePedestals();
+				//if (fSiliconMapper) fSiliconMapper->RecalculatePedestals();
 				fPedEvCntr = 0;
 			}
-			if (fGemMapper) fGemMapper->FillEvent(adc32, gem);
-			if (fSiliconMapper) fSiliconMapper->FillEvent(adc128, silicon);
+			//if (fGemMapper) fGemMapper->FillEvent(adc32, gem);
+			//if (fSiliconMapper) fSiliconMapper->FillEvent(adc128, silicon);
 			if (fDchMapper) fDchMapper->FillEvent(tdc, &fTimeShifts, dch, fT0Time);
 			if (fMwpcMapper) fMwpcMapper->FillEvent(hrb, mwpc);
-			if (fTof400Mapper) fTof400Mapper->FillEvent(tdc, &fTimeShifts, tof400);
+			if (fTof400Mapper && fT0Time != 0. && fT0Width != -1.) fTof400Mapper->FillEvent(tdc, &fTimeShifts, tof400);
 			if (fTof700Mapper && fT0Time != 0. && fT0Width != -1.) fTof700Mapper->fillEvent(tdc, &fTimeShifts, fT0Time, fT0Width, tof700);
-			if (fZDCMapper) fZDCMapper->fillEvent(adc, zdc);
-			if (fECALMapper) fECALMapper->fillEvent(adc, ecal);
+			//if (fZDCMapper) fZDCMapper->fillEvent(adc, zdc);
+			//if (fECALMapper) fECALMapper->fillEvent(adc, ecal);
 			if (fLANDMapper) fLANDMapper->fillEvent(tacquila, land);
 		}
 
-		*/
+		
 		fDigiTree->Fill();
 		prevEventType = curEventType;
 	}
@@ -1116,12 +1116,12 @@ BmnStatus BmnRawDataDecoder::InitDecoder() {
 		fTrigMapper = new BmnTrigRaw2Digit(fTrigPlaceMapFileName, fTrigDetMapFileName, fTrigINLTQDC1FileName, fTrigINLTQDC2FileName, fTrigINLTDC1FileName, fTrigINLTDC2FileName, fDigiTree );
 		if (fT0Map == NULL) {
 			BmnTrigMapping tm = fTrigMapper->GetT0Map();
-			printf("T0 serial 0x%X got from trig mapping\n", tm.serial);
 			if (tm.serial > 0) {
 				fT0Map = new TriggerMapStructure();
 				fT0Map->channel = tm.channel;
 				fT0Map->serial = tm.serial;
 				fT0Map->slot = tm.slot;
+				printf("T0 serial 0x%X got from trig mapping. Channel %i and slot %i \n", tm.serial,tm.channel, tm.slot);
 			}
 		}
 		fTrigMapper->SetSetup(fBmnSetup);
@@ -1149,7 +1149,7 @@ BmnStatus BmnRawDataDecoder::InitDecoder() {
 		tof400 = new TClonesArray("BmnTof1Digit");
 		fDigiTree->Branch("TOF400", &tof400);
 		fTof400Mapper = new BmnTof1Raw2Digit();
-		Bool_t FlagTemp = fTof400Mapper->setRun(fPeriodId, fRunId);
+		Bool_t FlagTemp = kFALSE; //fTof400Mapper->setRun(fPeriodId, fRunId);
 		if (FlagTemp == kFALSE) {
 			if (fTof400PlaceMapFileName.Sizeof() > 1 && fTof400StripMapFileName.Sizeof() > 1) {
 				TString dir = Form("%s%s", getenv("VMCWORKDIR"), "/input/");
@@ -1683,26 +1683,12 @@ BmnStatus BmnRawDataDecoder::GetT0Info(Double_t& t0time, Double_t &t0width) {
 	vector<TClonesArray*>* trigArr = fTrigMapper->GetTrigArrays();
 	BmnTrigDigit* dig = 0;
 	for (auto ar : *trigArr) {
-		if (fPeriodId > 6) {
-			if (strcmp(ar->GetName(), "BC2")) continue;
-		} else {
-			if (strcmp(ar->GetName(), "T0")) continue;
-		}
-		for (int i=0; i<ar->GetEntriesFast(); i++)
-		{
-			dig = (BmnTrigDigit*) ar->At(i);
-			if (fPeriodId > 6) {
-				if (dig->GetMod() == 0) {
-					t0time = dig->GetTime();
-					t0width = dig->GetAmp();
-					//		printf(" t0 %f t0w %f n %d\n", t0time, t0width, ar->GetEntriesFast());
-					return kBMNSUCCESS;
-				}
-			} else {
-				t0time = dig->GetTime();
-				t0width = dig->GetAmp();
-				return kBMNSUCCESS;
-			}
+		if (strcmp(ar->GetName(), "T0")) continue;
+		if( ar->GetEntriesFast() ){
+			dig = (BmnTrigDigit*) ar->At(0);
+			t0time = dig->GetTime();
+			t0width = dig->GetAmp();
+			return kBMNSUCCESS;
 		}
 	}
 	return kBMNERROR;

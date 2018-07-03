@@ -22,7 +22,7 @@ void BmnDataToRoot(TString file, Long_t nEvents = 0, Bool_t doConvert = kTRUE)
 	setup[1] = 0; // MWPC
 	setup[2] = 0; // SILICON
 	setup[3] = 0; // GEM
-	setup[4] = 0; // TOF-400
+	setup[4] = 1; // TOF-400
 	setup[5] = 0; // TOF-700
 	setup[6] = 0; // DCH
 	setup[7] = 0; // ZDC
@@ -30,7 +30,7 @@ void BmnDataToRoot(TString file, Long_t nEvents = 0, Bool_t doConvert = kTRUE)
 	setup[9] = 0; // LAND
 	decoder->SetDetectorSetup(setup);
 
-	TString PeriodSetupExt = Form("%d%s.txt", period, ((stp == kBMNSETUP) ? "" : "_SRC"));
+	TString PeriodSetupExt = Form("%d%s.txt", period, ((stp == kBMNSETUP) ? "" : ""));
 	
 	decoder	->	SetTrigPlaceMap	(TString("Trig_PlaceMap_Run7_SRC.txt"	));
 	decoder	->	SetTrigDetMap	(TString("Trig_map_Run7_SRC.txt"	));

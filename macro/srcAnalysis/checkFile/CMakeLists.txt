@@ -29,3 +29,7 @@ target_link_libraries(calcPedestals BmnData Silicon TOF1 UniDb Gem GlobalTrackin
 
 add_executable(fileQuality fileQuality.cpp)
 target_link_libraries(fileQuality BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+
+
+add_executable(Z2plot Z2plot.cpp)
+target_link_libraries(Z2plot BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
