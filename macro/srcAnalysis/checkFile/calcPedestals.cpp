@@ -52,14 +52,17 @@ int main(int argc, char ** argv)
 	TH1D * BC3_ped = new TH1D("BC3_ped","BC3_ped",4500,-500,4000);
 	TH1D * BC4_ped = new TH1D("BC4_ped","BC4_ped",4500,-500,4000);
 
+	TH1D * BC1_ent = new TH1D("BC1_entry","BC1_entry",15,0,15);
+	TH1D * BC2_ent = new TH1D("BC2_entry","BC2_entry",15,0,15);
+	TH1D * BC3_ent = new TH1D("BC3_entry","BC3_entry",15,0,15);
+	TH1D * BC4_ent = new TH1D("BC4_entry","BC4_entry",15,0,15);
+
 	// Set up the tree
 	TClonesArray * bc1Data 	= new TClonesArray("BmnTrigWaveDigit");
 	TClonesArray * bc2Data	= new TClonesArray("BmnTrigWaveDigit");
 	TClonesArray * bc3Data 	= new TClonesArray("BmnTrigWaveDigit");
 	TClonesArray * bc4Data	= new TClonesArray("BmnTrigWaveDigit");
 	TClonesArray * t0Data	= new TClonesArray("BmnTrigDigit");
-	TClonesArray * mcpData	= new TClonesArray("BmnTrigDigit");
-	TClonesArray * t02Data	= new TClonesArray("BmnTrigDigit");	
 
 	TTree * intree = NULL;
 	intree = (TTree*) infile->Get("cbmsim");
@@ -89,6 +92,12 @@ int main(int argc, char ** argv)
 
 	for (int event=0 ; event<nEvents ; event++)
 	{
+		bc1Data->Clear();
+		bc2Data->Clear();
+		bc3Data->Clear();
+		bc4Data->Clear();
+		t0Data->Clear();
+
 		if (event % 1000== 0)
 			cerr << "Working on event " << event << "\n";
 
@@ -105,26 +114,24 @@ int main(int argc, char ** argv)
 		// For all the possible ADC inside of BC1, T0, I want to take
 		// the one that has the closest time to T0 from TDC, and use the
 		// others as the pedestal subtraction
-		if( bc1Data->GetEntriesFast() && bc2Data->GetEntriesFast() && bc3Data->GetEntriesFast() && bc4Data->GetEntriesFast() ){
-			int bc1Idx, bc2Idx, bc3Idx, bc4Idx;			
-			
-				// Find the index for BC1
+		if( bc1Data->GetEntriesFast() ){
+			int bc1Idx;
 			findIdx(bc1Data,bc1Idx,t0Time);
-			
-				// Find the index for BC2
-			findIdx(bc2Data,bc2Idx,t0Time);
-	
-				// Find the index for BC3
-			findIdx(bc3Data,bc3Idx,t0Time);
-	
-				// Find the index for BC4
-			findIdx(bc4Data,bc4Idx,t0Time);
-
-			// Now we use bc1Idx for actual analysis, and any other entries are
-			// used for pedestal subtraction
 			fillPedestal( BC1_ped , bc1Data, bc1Idx);
+		}
+		if (bc2Data->GetEntriesFast() ){
+			int bc2Idx;
+			findIdx(bc2Data,bc2Idx,t0Time);
 			fillPedestal( BC2_ped , bc2Data, bc2Idx);
+		}
+		if( bc3Data->GetEntriesFast() ){
+			int bc3Idx;
+			findIdx(bc3Data,bc3Idx,t0Time);
 			fillPedestal( BC3_ped , bc3Data, bc3Idx);
+		}
+		if( bc4Data->GetEntriesFast() ){
+			int bc4Idx;			
+			findIdx(bc4Data,bc4Idx,t0Time);
 			fillPedestal( BC4_ped , bc4Data, bc4Idx);
 			
 		}
