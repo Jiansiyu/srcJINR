@@ -270,7 +270,7 @@ int main(int argc, char ** argv)
 	hTdiff_BC3->GetYaxis()->SetTitleOffset(1.5);
 	hTdiff_BC3->GetYaxis()->SetTitle("T0 - BC3 Time [ns]");
 	hTdiff_BC3->SetTitle("Time Difference of BC3 with T0 and Resolution");
-	hTdiff_BC3->GetYaxis()->SetRangeUser(6.5,9.5);
+	hTdiff_BC3->GetYaxis()->SetRangeUser(7.5,11.5);
 	c4->cd(4);
 	hTdiff_BC4->SetMarkerStyle(20);
 	hTdiff_BC4->Draw("AP");
@@ -278,7 +278,7 @@ int main(int argc, char ** argv)
 	hTdiff_BC4->GetYaxis()->SetTitleOffset(1.5);
 	hTdiff_BC4->GetYaxis()->SetTitle("T0 - BC4 Time [ns]");
 	hTdiff_BC4->SetTitle("Time Difference of BC4 with T0 and Resolution");
-	hTdiff_BC4->GetYaxis()->SetRangeUser(20,23);
+	hTdiff_BC4->GetYaxis()->SetRangeUser(20,25);
 	c4->Update();
 
 
@@ -291,7 +291,7 @@ int main(int argc, char ** argv)
 	hCarbonBC1->GetYaxis()->SetTitleOffset(1.5);
 	hCarbonBC1->GetYaxis()->SetTitle("ADC [a.u.]");
 	hCarbonBC1->SetTitle("Carbon Peak of BC1");
-	hCarbonBC1->GetYaxis()->SetRangeUser(900,1200);
+	hCarbonBC1->GetYaxis()->SetRangeUser(500,1500);
 	c5->cd(2);
 	hCarbonBC2->SetMarkerStyle(20);
 	hCarbonBC2->Draw("AP");
@@ -299,7 +299,7 @@ int main(int argc, char ** argv)
 	hCarbonBC2->GetYaxis()->SetTitleOffset(1.5);
 	hCarbonBC2->GetYaxis()->SetTitle("ADC [a.u.]");
 	hCarbonBC2->SetTitle("Carbon Peak of BC2");
-	hCarbonBC2->GetYaxis()->SetRangeUser(600,900);
+	hCarbonBC2->GetYaxis()->SetRangeUser(250,1250);
 	c5->Update();
 
 

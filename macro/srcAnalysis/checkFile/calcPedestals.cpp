@@ -33,7 +33,7 @@ int main(int argc, char ** argv)
 	// Set up the input file
 	TFile * infile = NULL;
 	infile = new TFile(argv[1]);
-	if (!infile)
+	if (infile->IsZombie())
 	{
 		cerr << "Could not open file " << argv[1] <<"\n"
 			<< "\tBailing out\n";
@@ -41,8 +41,6 @@ int main(int argc, char ** argv)
 	}
 	else
 	{
-		//cerr << "Successfully opened file " << argv[1] << " and saved it to address " << infile << "\n";
-	}
 
 	// Get the run number from input file:
 	TString file = argv[1];
@@ -75,12 +73,6 @@ int main(int argc, char ** argv)
 	TH1D * BC3_tdiff_ped = new TH1D("BC3_tdiff_ped","BC3_tdiff_ped",2000,-50,50);
 	TH1D * BC4_tdiff_ped = new TH1D("BC4_tdiff_ped","BC4_tdiff_ped",2000,-50,50);
 
-
-	TH1D * BC1_ent = new TH1D("BC1_entry","BC1_entry",15,0,15);
-	TH1D * BC2_ent = new TH1D("BC2_entry","BC2_entry",15,0,15);
-	TH1D * BC3_ent = new TH1D("BC3_entry","BC3_entry",15,0,15);
-	TH1D * BC4_ent = new TH1D("BC4_entry","BC4_entry",15,0,15);
-
 	// Set up the tree
 	TClonesArray * bc1Data 	= new TClonesArray("BmnTrigWaveDigit");
 	TClonesArray * bc2Data	= new TClonesArray("BmnTrigWaveDigit");
@@ -97,7 +89,8 @@ int main(int argc, char ** argv)
 	}
 	else
 	{
-		//cerr << "Successfully loaded tree at address " << intree << "\n";
+		cerr << "Successfully opened file " << argv[1] << " and saved it to address " << infile << "\n";
+		cerr << "Successfully loaded tree at address " << intree << " with events " << intree->GetEntries() << "\n";
 	}
 	
 	const int nEvents = intree->GetEntries();
@@ -286,9 +279,8 @@ int main(int argc, char ** argv)
 
 	outFile->Close();
 
-
-
 	return 0;
+	}
 }
 
 void findIdx( TClonesArray* data, int &index , double refT){
