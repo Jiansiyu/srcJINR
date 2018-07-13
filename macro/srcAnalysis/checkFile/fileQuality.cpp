@@ -303,6 +303,17 @@ int main(int argc, char ** argv)
 	c5->Update();
 
 
+	cout << "BC1 Pedestal: " << accumulate(pedestals_bc1.begin() , pedestals_bc1.end() , 0.)/pedestals_bc1.size() << "\n";
+	cout << "BC2 Pedestal: " << accumulate(pedestals_bc2.begin() , pedestals_bc2.end() , 0.)/pedestals_bc2.size() << "\n";
+	cout << "BC3 Pedestal: " << accumulate(pedestals_bc3.begin() , pedestals_bc3.end() , 0.)/pedestals_bc3.size() << "\n";
+	std::vector<double> sk_pedestals_bc4;
+	for( int i = 0 ; i < pedestals_bc4.size() ; i++ )
+		if( pedestals_bc4.at(i) < 160 )
+			sk_pedestals_bc4.push_back(pedestals_bc4.at(i));
+
+	cout << "BC4 Pedestal: " << accumulate(sk_pedestals_bc4.begin() , sk_pedestals_bc4.end() , 0.)/sk_pedestals_bc4.size() << "\n";
+
+
 	theApp.Run();
 
 	/*
