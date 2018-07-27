@@ -35,6 +35,11 @@ target_link_libraries(multiplicity BmnData Silicon TOF1 UniDb Gem GlobalTracking
 add_executable(alignStrips stripAlignment/alignStrips.cpp)
 target_link_libraries(alignStrips BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
 
-
 add_executable(tofAnalysis tofAnalysis.cpp)
 target_link_libraries(tofAnalysis BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+
+add_executable(tofTimeWalk timeWalk/tofTimeWalk.cpp)
+target_link_libraries(tofTimeWalk BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+
+add_executable(tofCluster clustering/tofCluster.cpp)
+target_link_libraries(tofCluster BmnData Silicon TOF1 UniDb Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)

@@ -179,7 +179,7 @@ int main(int argc, char ** argv)
 	hPedBC1->GetYaxis()->SetTitleOffset(1.5);
 	hPedBC1->GetYaxis()->SetTitle("ADC [a.u]");
 	hPedBC1->SetTitle("Pedestal of BC1");
-	hPedBC1->GetYaxis()->SetRangeUser(40,140);
+	hPedBC1->GetYaxis()->SetRangeUser(0,140);
 	c2->cd(2);
 	hPedBC2->SetMarkerStyle(20);
 	hPedBC2->Draw("AP");
@@ -187,7 +187,7 @@ int main(int argc, char ** argv)
 	hPedBC2->GetYaxis()->SetTitleOffset(1.5);
 	hPedBC2->GetYaxis()->SetTitle("ADC [a.u]");
 	hPedBC2->SetTitle("Pedestal of BC2");
-	hPedBC2->GetYaxis()->SetRangeUser(0,150);
+	hPedBC2->GetYaxis()->SetRangeUser(-80,60);
 	c2->cd(3);
 	hPedBC3->SetMarkerStyle(20);
 	hPedBC3->Draw("AP");
@@ -195,7 +195,7 @@ int main(int argc, char ** argv)
 	hPedBC3->GetYaxis()->SetTitleOffset(1.5);
 	hPedBC3->GetYaxis()->SetTitle("ADC [a.u]");
 	hPedBC3->SetTitle("Pedestal of BC3");
-	hPedBC3->GetYaxis()->SetRangeUser(-65,35);
+	hPedBC3->GetYaxis()->SetRangeUser(-90,50);
 	c2->cd(4);
 	hPedBC4->SetMarkerStyle(20);
 	hPedBC4->Draw("AP");
@@ -203,7 +203,7 @@ int main(int argc, char ** argv)
 	hPedBC4->GetYaxis()->SetTitleOffset(1.5);
 	hPedBC4->GetYaxis()->SetTitle("ADC [a.u]");
 	hPedBC4->SetTitle("Pedestal of BC4");
-	hPedBC4->GetYaxis()->SetRangeUser(100,200);
+	hPedBC4->GetYaxis()->SetRangeUser(55,195);
 	c2->Update();
 
 
@@ -215,7 +215,7 @@ int main(int argc, char ** argv)
 	hTdcBC1->GetXaxis()->SetTitle("Run Number");
 	hTdcBC1->GetYaxis()->SetTitleOffset(1.5);
 	hTdcBC1->GetYaxis()->SetTitle("Fraction");
-	hTdcBC1->SetTitle("BC1: Fraction of Events with only 1 TDC");
+	hTdcBC1->SetTitle("BC1: Fraction of Events with only 1 TQDC");
 	hTdcBC1->GetYaxis()->SetRangeUser(0,1);
 	c3->cd(2);
 	hTdcBC2->SetMarkerStyle(20);
@@ -223,7 +223,7 @@ int main(int argc, char ** argv)
 	hTdcBC2->GetXaxis()->SetTitle("Run Number");
 	hTdcBC2->GetYaxis()->SetTitleOffset(1.5);
 	hTdcBC2->GetYaxis()->SetTitle("Fraction");
-	hTdcBC2->SetTitle("BC2: Fraction of Events with only 1 TDC");
+	hTdcBC2->SetTitle("BC2: Fraction of Events with only 1 TQDC");
 	hTdcBC2->GetYaxis()->SetRangeUser(0,1);
 	c3->cd(3);
 	hTdcBC3->SetMarkerStyle(20);
@@ -231,7 +231,7 @@ int main(int argc, char ** argv)
 	hTdcBC3->GetXaxis()->SetTitle("Run Number");
 	hTdcBC3->GetYaxis()->SetTitleOffset(1.5);
 	hTdcBC3->GetYaxis()->SetTitle("Fraction");
-	hTdcBC3->SetTitle("BC3: Fraction of Events with only 1 TDC");
+	hTdcBC3->SetTitle("BC3: Fraction of Events with only 1 TQDC");
 	hTdcBC3->GetYaxis()->SetRangeUser(0,1);
 	c3->cd(4);
 	hTdcBC4->SetMarkerStyle(20);
@@ -239,7 +239,7 @@ int main(int argc, char ** argv)
 	hTdcBC4->GetXaxis()->SetTitle("Run Number");
 	hTdcBC4->GetYaxis()->SetTitleOffset(1.5);
 	hTdcBC4->GetYaxis()->SetTitle("Fraction");
-	hTdcBC4->SetTitle("BC4: Fraction of Events with only 1 TDC");
+	hTdcBC4->SetTitle("BC4: Fraction of Events with only 1 TQDC");
 	hTdcBC4->GetYaxis()->SetRangeUser(0,1);
 	c3->Update();
 
@@ -306,12 +306,7 @@ int main(int argc, char ** argv)
 	cout << "BC1 Pedestal: " << accumulate(pedestals_bc1.begin() , pedestals_bc1.end() , 0.)/pedestals_bc1.size() << "\n";
 	cout << "BC2 Pedestal: " << accumulate(pedestals_bc2.begin() , pedestals_bc2.end() , 0.)/pedestals_bc2.size() << "\n";
 	cout << "BC3 Pedestal: " << accumulate(pedestals_bc3.begin() , pedestals_bc3.end() , 0.)/pedestals_bc3.size() << "\n";
-	std::vector<double> sk_pedestals_bc4;
-	for( int i = 0 ; i < pedestals_bc4.size() ; i++ )
-		if( pedestals_bc4.at(i) < 160 )
-			sk_pedestals_bc4.push_back(pedestals_bc4.at(i));
-
-	cout << "BC4 Pedestal: " << accumulate(sk_pedestals_bc4.begin() , sk_pedestals_bc4.end() , 0.)/sk_pedestals_bc4.size() << "\n";
+	cout << "BC4 Pedestal: " << accumulate(pedestals_bc4.begin() , pedestals_bc4.end() , 0.)/pedestals_bc4.size() << "\n";
 
 
 	theApp.Run();

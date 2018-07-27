@@ -18,7 +18,8 @@
 using namespace std;
 
 void findIdx( TClonesArray* data, int &index , double refT);
-void fillPedestal( TH1D* pedHist, TH1D* sigHist, TH1D* tdiffPed, TH1D* tdiffSig, TClonesArray* data, int index, double startT);
+void fillPedestal( TH1D* pedHist, TH1D* sigHist, TH1D * offHist , TH1D* tdiffPed, TH1D* tdiffSig, TClonesArray* data, int index, double startT);
+double GetPedestal( BmnTrigWaveDigit * waveform );
 
 int main(int argc, char ** argv)
 {
@@ -48,15 +49,20 @@ int main(int argc, char ** argv)
 	// Setup output file
 	
 	TFile * outFile = new TFile("qualityCheck/checked_"+run_number+".root","RECREATE");
-	TH1D * BC1_ped = new TH1D("BC1_ped","BC1_ped",4500,-500,4000);
-	TH1D * BC2_ped = new TH1D("BC2_ped","BC2_ped",4500,-500,4000);
-	TH1D * BC3_ped = new TH1D("BC3_ped","BC3_ped",4500,-500,4000);
-	TH1D * BC4_ped = new TH1D("BC4_ped","BC4_ped",4500,-500,4000);
+	TH1D * BC1_ped = new TH1D("BC1_ped","BC1_ped",2250,-500,4000);
+	TH1D * BC2_ped = new TH1D("BC2_ped","BC2_ped",2250,-500,4000);
+	TH1D * BC3_ped = new TH1D("BC3_ped","BC3_ped",2250,-500,4000);
+	TH1D * BC4_ped = new TH1D("BC4_ped","BC4_ped",2250,-500,4000);
 	
-	TH1D * BC1_sig = new TH1D("BC1_sig","BC1_sig",4500,-500,4000);
-	TH1D * BC2_sig = new TH1D("BC2_sig","BC2_sig",4500,-500,4000);
-	TH1D * BC3_sig = new TH1D("BC3_sig","BC3_sig",4500,-500,4000);
-	TH1D * BC4_sig = new TH1D("BC4_sig","BC4_sig",4500,-500,4000);
+	TH1D * BC1_sig = new TH1D("BC1_sig","BC1_sig",2250,-500,4000);
+	TH1D * BC2_sig = new TH1D("BC2_sig","BC2_sig",2250,-500,4000);
+	TH1D * BC3_sig = new TH1D("BC3_sig","BC3_sig",2250,-500,4000);
+	TH1D * BC4_sig = new TH1D("BC4_sig","BC4_sig",2250,-500,4000);
+	
+	TH1D * BC1_offHist = new TH1D("BC1_offHist","BC1_offHist",2250,-500,4000);
+	TH1D * BC2_offHist = new TH1D("BC2_offHist","BC2_offHist",2250,-500,4000);
+	TH1D * BC3_offHist = new TH1D("BC3_offHist","BC3_offHist",2250,-500,4000);
+	TH1D * BC4_offHist = new TH1D("BC4_offHist","BC4_offHist",2250,-500,4000);
 
 	TH1D * BC1_entry = new TH1D("BC1_entry","BC1_entry",15,0,15);
 	TH1D * BC2_entry = new TH1D("BC2_entry","BC2_entry",15,0,15);
@@ -68,10 +74,12 @@ int main(int argc, char ** argv)
 	TH1D * BC3_tdiff_sig = new TH1D("BC3_tdiff_sig","BC3_tdiff_sig",2000,-50,50);
 	TH1D * BC4_tdiff_sig = new TH1D("BC4_tdiff_sig","BC4_tdiff_sig",2000,-50,50);
 
-	TH1D * BC1_tdiff_ped = new TH1D("BC1_tdiff_ped","BC1_tdiff_ped",2000,-50,50);
-	TH1D * BC2_tdiff_ped = new TH1D("BC2_tdiff_ped","BC2_tdiff_ped",2000,-50,50);
-	TH1D * BC3_tdiff_ped = new TH1D("BC3_tdiff_ped","BC3_tdiff_ped",2000,-50,50);
-	TH1D * BC4_tdiff_ped = new TH1D("BC4_tdiff_ped","BC4_tdiff_ped",2000,-50,50);
+	TH1D * BC1_tdiff_ped = new TH1D("BC1_tdiff_ped","BC1_tdiff_ped",20000,-1000,1000);
+	TH1D * BC2_tdiff_ped = new TH1D("BC2_tdiff_ped","BC2_tdiff_ped",20000,-1000,1000);
+	TH1D * BC3_tdiff_ped = new TH1D("BC3_tdiff_ped","BC3_tdiff_ped",20000,-1000,1000);
+	TH1D * BC4_tdiff_ped = new TH1D("BC4_tdiff_ped","BC4_tdiff_ped",20000,-1000,1000);
+
+	TH1D * bc1bc2	= new TH1D("CarbonIn","CarbonIn",700,0,70);
 
 	// Set up the tree
 	TClonesArray * bc1Data 	= new TClonesArray("BmnTrigWaveDigit");
@@ -140,7 +148,7 @@ int main(int argc, char ** argv)
 			cntBC1++;
 			int bc1Idx;
 			findIdx(bc1Data,bc1Idx,t0Time);
-			fillPedestal( BC1_ped , BC1_sig , BC1_tdiff_ped , BC1_tdiff_sig , bc1Data , bc1Idx , t0Time);
+			fillPedestal( BC1_ped , BC1_sig , BC1_offHist , BC1_tdiff_ped , BC1_tdiff_sig , bc1Data , bc1Idx , t0Time);
 		}
 
 		if( bc2Data->GetEntriesFast() == 1) cntBC2_1++;
@@ -148,7 +156,7 @@ int main(int argc, char ** argv)
 			cntBC2++;
 			int bc2Idx;
 			findIdx(bc2Data,bc2Idx,t0Time);
-			fillPedestal( BC2_ped , BC2_sig , BC2_tdiff_ped , BC2_tdiff_sig , bc2Data , bc2Idx , t0Time);
+			fillPedestal( BC2_ped , BC2_sig , BC2_offHist , BC2_tdiff_ped , BC2_tdiff_sig , bc2Data , bc2Idx , t0Time);
 		}
 		
 		if( bc3Data->GetEntriesFast() == 1) cntBC3_1++;
@@ -156,7 +164,7 @@ int main(int argc, char ** argv)
 			cntBC3++;
 			int bc3Idx;
 			findIdx(bc3Data,bc3Idx,t0Time);
-			fillPedestal( BC3_ped , BC3_sig , BC3_tdiff_ped , BC3_tdiff_sig , bc3Data , bc3Idx , t0Time);
+			fillPedestal( BC3_ped , BC3_sig ,  BC3_offHist ,BC3_tdiff_ped , BC3_tdiff_sig , bc3Data , bc3Idx , t0Time);
 		}
 		
 		if( bc4Data->GetEntriesFast() == 1) cntBC4_1++;
@@ -164,7 +172,7 @@ int main(int argc, char ** argv)
 			cntBC4++;
 			int bc4Idx;
 			findIdx(bc4Data,bc4Idx,t0Time);
-			fillPedestal( BC4_ped , BC4_sig , BC4_tdiff_ped , BC4_tdiff_sig , bc4Data , bc4Idx , t0Time);
+			fillPedestal( BC4_ped , BC4_sig ,  BC4_offHist ,BC4_tdiff_ped , BC4_tdiff_sig , bc4Data , bc4Idx , t0Time);
 
 		}
 
@@ -177,10 +185,14 @@ int main(int argc, char ** argv)
 	pedBC3 = BC3_ped->GetXaxis()->GetBinCenter(BC3_ped->GetMaximumBin());
 	pedBC4 = BC4_ped->GetXaxis()->GetBinCenter(BC4_ped->GetMaximumBin());
 
-	TFitResultPtr init_bc1 = BC1_sig->Fit("gaus","QES","",0,4000);
-	TFitResultPtr fin_bc1  = BC1_sig->Fit("gaus","QES","",0, init_bc1->Parameter(1) + init_bc1->Parameter(2) );
-	TFitResultPtr init_bc2 = BC2_sig->Fit("gaus","QES","",0,4000);
-	TFitResultPtr fin_bc2  = BC2_sig->Fit("gaus","QES","",0, init_bc2->Parameter(1) + init_bc2->Parameter(2) );
+	double tMax;
+	tMax = BC1_sig->GetXaxis()->GetBinCenter( BC1_sig->GetMaximumBin() );
+	TFitResultPtr init_bc1 = BC1_sig->Fit("gaus","QES","",0,tMax+100);
+	TFitResultPtr fin_bc1  = BC1_sig->Fit("gaus","QES","",0, init_bc1->Parameter(1) + 0.5*init_bc1->Parameter(2) );
+
+	tMax = BC2_sig->GetXaxis()->GetBinCenter( BC2_sig->GetMaximumBin() );
+	TFitResultPtr init_bc2 = BC2_sig->Fit("gaus","QES","",0,tMax+100);
+	TFitResultPtr fin_bc2  = BC2_sig->Fit("gaus","QES","",0, init_bc2->Parameter(1) + 0.5*init_bc2->Parameter(2) );
 	
 	TFitResultPtr tBC1 = BC1_tdiff_sig->Fit("gaus","QES");
 	TFitResultPtr tBC2 = BC2_tdiff_sig->Fit("gaus","QES");
@@ -239,6 +251,49 @@ int main(int argc, char ** argv)
 	carbonInWidth[0] = fin_bc1->Parameter(2);
 	carbonInWidth[1] = fin_bc2->Parameter(2);
 	
+
+
+	// Do carbon peak plot for fun:
+	for (int event=0 ; event<nEvents ; event++)
+	{
+		t0Data->Clear();
+		bc1Data->Clear();	
+		bc2Data->Clear();	
+		bc3Data->Clear();	
+		bc4Data->Clear();	
+
+		//if (event % 1000== 0)
+		//	cerr << "Working on event " << event << "\n";
+
+		intree->GetEvent(event);
+		
+		// Kill any event that doesn't have T0 entry, or that
+		// has more than 1 TDC in T0 -- cuts out 7% of data	
+		if( t0Data->GetEntriesFast() != 1) continue;
+
+		BmnTrigDigit * t0Signal = (BmnTrigDigit*) t0Data->At(0);
+		double t0Time = t0Signal->GetTime();
+		
+		if( bc1Data->GetEntriesFast() && bc2Data->GetEntriesFast()){
+			int bc1Idx;
+			findIdx(bc1Data,bc1Idx,t0Time);
+			int bc2Idx;
+			findIdx(bc2Data,bc2Idx,t0Time);
+			
+			BmnTrigWaveDigit * signalBC1 = (BmnTrigWaveDigit*) bc1Data->At(bc1Idx);
+			BmnTrigWaveDigit * signalBC2 = (BmnTrigWaveDigit*) bc2Data->At(bc2Idx);
+
+			bc1bc2->Fill( 36./35.3*sqrt( ((signalBC1->GetPeak() - pedBC1)*36./(carbonIn[0] - pedBC1)) * ((signalBC2->GetPeak() - pedBC2)*36./(carbonIn[1] - pedBC2)) ) ) ;
+			
+		}
+
+
+	}
+
+
+
+
+
 	infile->Close();
 	
 
@@ -261,6 +316,11 @@ int main(int argc, char ** argv)
 	BC2_sig->Write();
 	BC3_sig->Write();
 	BC4_sig->Write();
+	
+	BC1_offHist->Write();
+	BC2_offHist->Write();
+	BC3_offHist->Write();
+	BC4_offHist->Write();
 
 	BC1_entry->Write();
 	BC2_entry->Write();
@@ -276,6 +336,8 @@ int main(int argc, char ** argv)
 	BC2_tdiff_ped->Write();
 	BC3_tdiff_ped->Write();
 	BC4_tdiff_ped->Write();
+
+	bc1bc2->Write();
 
 	outFile->Close();
 
@@ -295,19 +357,34 @@ void findIdx( TClonesArray* data, int &index , double refT){
 	}
 }
 
-void fillPedestal( TH1D* pedHist, TH1D* sigHist, TH1D* tdiffPed, TH1D* tdiffSig, TClonesArray* data, int index, double startT){
+void fillPedestal( TH1D* pedHist, TH1D* sigHist, TH1D * offHist , TH1D* tdiffPed, TH1D* tdiffSig, TClonesArray* data, int index, double startT){
 	for( int m = 0 ; m < data->GetEntriesFast() ; m++){
 		if( m == index){
 			BmnTrigWaveDigit * signal = (BmnTrigWaveDigit*) data->At(m);
 			sigHist->Fill ( signal->GetPeak() );
 			tdiffSig->Fill( signal->GetTime() - startT );
+			pedHist->Fill ( GetPedestal(signal) );
 		}
 		else{
 			BmnTrigWaveDigit * signal = (BmnTrigWaveDigit*) data->At(m);
-			pedHist->Fill ( signal->GetPeak() );
+			pedHist->Fill ( GetPedestal(signal) );
 			tdiffPed->Fill( signal->GetTime() - startT );
+			offHist->Fill( signal->GetPeak() );
 		}
 	}
 
 }
 
+double GetPedestal( BmnTrigWaveDigit * waveform ){
+	int dim = waveform->GetNSamples();
+	short * waveDig = waveform->GetShortValue();
+
+	double ped = 0;
+	int it = 10;
+	for( int i = 0 ; i < it ; i ++){
+		ped += waveDig[dim-(i+1)];
+	}
+	ped /= it;
+
+	return ped;	
+}

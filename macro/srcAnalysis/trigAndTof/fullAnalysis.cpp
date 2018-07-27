@@ -48,7 +48,6 @@ struct TOFHit{
 
 void findIdx( TClonesArray* data, int &index , double refT);
 double randomStrips();
-double fixWalk( double amp, double shift, double par0, double par1, double par2);
 
 int main(int argc, char ** argv)
 {
@@ -108,71 +107,15 @@ int main(int argc, char ** argv)
 		cout << "\tFailed to find strip shift file, setting all corrections to 0...\n";
 	} 
 
-	// Try opening the timewalk file if it exists:
-	ifstream f_corr_walk;
-	dir = std::getenv("VMCWORKDIR");
-	dir += "/input/TOF400_TimeWalk_RUN7_SRC.dat";
-	cout << "Attempting to open TimeWalk file: " << dir << "\n";
-	f_corr_walk.open(dir);
-	char line3[256];
-	f_corr_walk.getline(line3, 256);
-	f_corr_walk.getline(line3, 256);
-	int tmp_Pl, tmp_St, tmp_Pt;
-	double tmp_Sh, tmp_p0, tmp_p1, tmp_p2, tmp_p0e, tmp_p1e, tmp_p2e;
-	double walkFunc[20][48][4] = {0.};
-	if (f_corr_walk.is_open() == true){
- 		while (!f_corr_walk.eof()) {
-			f_corr_walk >> tmp_Pl >> tmp_St >> tmp_Pt \
-				>> tmp_Sh >> tmp_p0 >> tmp_p1 >> tmp_p2 \
-				>> tmp_p0e >> tmp_p1e >> tmp_p2e;
-			walkFunc[tmp_Pl][tmp_St][0] = tmp_Sh;
-			walkFunc[tmp_Pl][tmp_St][1] = tmp_p0;
-			walkFunc[tmp_Pl][tmp_St][2] = tmp_p1;
-			walkFunc[tmp_Pl][tmp_St][3] = tmp_p2;
-			if( tmp_Sh == -1)
-				killStrip[tmp_Pl][tmp_St] = true;
-		}
-		cout << "\tLoaded time walk file\n";
-	}
-	else{
-		cout << "\tFailed to find time walk file, setting all corrections to 0...\n";
-	} 
-	
+
 	// Histograms for looking at cuts
-	TH1D ** hHits		= new TH1D*[20];
-	TH1D ** hSpatialSpread = new TH1D*[20];
-	TH1D ** hMCSpread	= new TH1D*[20];
-	TH1D ** hYSpread	= new TH1D*[20];
-	TH2D ** h2DSpread	= new TH2D*[20];
-	TH1D *** hToF_All		= new TH1D**[20];
-	TH2D *** hToF_All_2D		= new TH2D**[20];
-	TH1D *** hToF_SingleEvents	= new TH1D**[20];
+	TH1D * hMult = new TH1D("hMult","hMult",20,0,20);
+	TH1D ** hHits = new TH1D*[20];
 	TString hName;
-	for( int pl = 0; pl < 20 ; pl++){
-		hName	= Form("hHits_%i",pl);
-		hHits[pl]	= new TH1D(hName,hName,15,0,15);
-		hName 	= Form("hSpatialSpread_%i",pl);
-		hSpatialSpread[pl] = new TH1D(hName,hName,300,0,300);
-		hName 	= Form("hMCSpread_%i",pl);
-		hMCSpread[pl] = new TH1D(hName,hName,300,0,300);
-		hName	= Form("hYSpread_%i",pl);
-		hYSpread[pl]	= new TH1D(hName,hName,600,-30,30);
-		hName	= Form("h2DSpread_%i",pl);
-		h2DSpread[pl]	= new TH2D(hName,hName,48,0,48,600,-30,30);
-		
-		hToF_All[pl]	= new TH1D*[48];
-		hToF_All_2D[pl]	= new TH2D*[48];
-		hToF_SingleEvents[pl]	= new TH1D*[48];
-		for( int st = 0 ; st < 48 ; st++){
-			hName 	= Form("hToF_All_%i_%i",pl,st);
-			hToF_All[pl][st] = new TH1D(hName,hName,4000,-15,85);
-			hName 	= Form("hToF_All_2D_%i_%i",pl,st);
-			hToF_All_2D[pl][st] = new TH2D(hName,hName,1000,0,50,4000,-15,85);
-			hName 	= Form("hToF_Singles_%i_%i",pl,st);
-			hToF_SingleEvents[pl][st] = new TH1D(hName,hName,4000,-15,85);
-		}
+	for( int pl = 0 ; pl < 20 ; pl++){
+		hName = Form("hHits_%i",pl);
+		hHits[pl] = new TH1D(hName,hName,20,0,20);
 	}
-	
 
 	const int files = argc - 1;
 	for( int fi = 0 ; fi < files ; ++fi){
@@ -233,6 +176,9 @@ int main(int argc, char ** argv)
 		TClonesArray * t0Data	= new TClonesArray("BmnTrigDigit");
 		TClonesArray * tofData  = new TClonesArray("BmnTof1Digit");
 
+		TClonesArray * bc3Data 	= new TClonesArray("BmnTrigWaveDigit");
+		TClonesArray * bc4Data  = new TClonesArray("BmnTrigWaveDigit");
+
 
 		TTree * intree = NULL;
 		intree = (TTree*) infile->Get("cbmsim");
@@ -252,21 +198,28 @@ int main(int argc, char ** argv)
 		// TQDC Branches
 		intree->SetBranchAddress("TQDC_BC1"	,&bc1Data);
 		intree->SetBranchAddress("TQDC_T0"	,&bc2Data);
+		intree->SetBranchAddress("TQDC_BC3"	,&bc3Data);
+		intree->SetBranchAddress("TQDC_BC4"	,&bc4Data);
 		// TDC Branches
 		intree->SetBranchAddress("T0"		,&t0Data);
 		// ToF400 Branches
 		intree->SetBranchAddress("TOF400"	,&tofData);
 
+
 		// Loop over events
 		for (int event=0 ; event<nEvents ; event++){
 
-
 			double adcBC1 = 0;
 			double adcBC2 = 0;
+			double adcBC3 = 0;
+			double adcBC4 = 0;
 			t0Data->Clear();
 			bc1Data->Clear();	
 			bc2Data->Clear();	
+			bc3Data->Clear();
+			bc4Data->Clear();
 			tofData->Clear();
+		
 
 			intree->GetEvent(event);
 
@@ -341,18 +294,11 @@ int main(int argc, char ** argv)
 							double meanTime = (tmpT + tofT + corrLR[plane][strip])*0.5;
 							double sumAmps = sqrt(tmpA * tofAmp);
 							double pos = 0.5*(1./0.06)*(tmpT - tofT + corrLR[plane][strip]); // +/- 15cm
-		
-							if( sumAmps < 9 ) continue; // I don't want hits with low amplitude					
-	
+						
 							// If there was already a created hit for this strip, only take the earliest one
 							// so there will only be one hit per strip allowed
 							if( tofEvents[plane][strip].hit == false || (tofEvents[plane][strip].hit == true && meanTime < tofEvents[plane][strip].t) ){
-								double par0 = walkFunc[plane][strip][1];
-								double par1 = walkFunc[plane][strip][2];
-								double par2 = walkFunc[plane][strip][3];
-								double shift = walkFunc[plane][strip][0];
-								tofEvents[plane][strip].t = meanTime - t0Time + (-6.1 + 27./sqrt(t0Amp) ) - stripShift[plane][strip] - fixWalk(sumAmps, shift, par0, par1, par2);
-	
+								tofEvents[plane][strip].t = meanTime - t0Time + (-6.1 + 27./sqrt(t0Amp) ) - stripShift[plane][strip];
 								tofEvents[plane][strip].a = sumAmps;
 								tofEvents[plane][strip].y = pos;
 								tofEvents[plane][strip].hit = true;
@@ -361,93 +307,26 @@ int main(int argc, char ** argv)
 					}
 				}
 			}
-	
-			// Now for each event, I've collected at most 1 hit per strip in the ToF400. Of course not all strips fired, and not all planes fired.			
-
-			// Now fill histograms that I have created valid strip hits.
-			// 	Look at how many strips fired in a trigger event
-			//
+		
+			// First I need to understand the multiplicity of ToF400 in our normal data running
+			int totcnt = 0;
 			for( int pl = 0 ; pl < 20 ; pl++){
 				int cnt = 0;
 				std::vector<int> fired;
 				for( int st = 0 ; st < 48 ; st++)
 					if( tofEvents[pl][st].hit == true){
-						hToF_All[pl][st] -> Fill(  tofEvents[pl][st].t  ); // all types of events -- multi strip and single strip included
-						hToF_All_2D[pl][st] -> Fill( tofEvents[pl][st].a , tofEvents[pl][st].t );
 						cnt++;
-						fired.push_back(st);
 					}
-				
 				if( cnt > 0 ) hHits[pl] -> Fill( cnt );
-				if( cnt == 1) hToF_SingleEvents[pl][fired.at(0)] -> Fill( tofEvents[pl][fired.at(0)].t );
 				if( cnt == 2){
-					// Look at position difference
-						// spread in x
-					hSpatialSpread[pl]->Fill( (fired.at(1) - fired.at(0))*12.5 );
-					hMCSpread[pl]->Fill( randomStrips() );
-						// spread in y
-					hYSpread[pl]->Fill( tofEvents[pl][fired.at(0)].y - tofEvents[pl][fired.at(1)].y );
-						// 2D spread
-					h2DSpread[pl]->Fill( (fired.at(1) - fired.at(0)) , tofEvents[pl][fired.at(0)].y - tofEvents[pl][fired.at(1)].y );
-			
-					// This is some basic clustering that will take two strips and look for nearby in x and y:
-					if( fabs( (fired.at(1) - fired.at(0)) ) <= 2 )  // If they are within 2 strips apart 
-						if( fabs(  tofEvents[pl][fired.at(0)].y - tofEvents[pl][fired.at(1)].y ) < 2*1.3 ){} // If they are in same y position
-							// They are the same event
-							//
-							// Otherwise, they need to be taken as separate events, or thrown out
-
-
 				}
 				if( cnt == 3){
-					// Look at position difference
-						// spread in x
-					hSpatialSpread[pl]->Fill( (fired.at(2) - fired.at(1))*12.5 );
-					hSpatialSpread[pl]->Fill( (fired.at(2) - fired.at(0))*12.5 );
-					hSpatialSpread[pl]->Fill( (fired.at(1) - fired.at(0))*12.5 );
-					hMCSpread[pl]->Fill( randomStrips() );
-					hMCSpread[pl]->Fill( randomStrips() );
-					hMCSpread[pl]->Fill( randomStrips() );
-						// spread in y
-					hYSpread[pl]->Fill( tofEvents[pl][fired.at(2)].y - tofEvents[pl][fired.at(1)].y );
-					hYSpread[pl]->Fill( tofEvents[pl][fired.at(2)].y - tofEvents[pl][fired.at(0)].y );
-					hYSpread[pl]->Fill( tofEvents[pl][fired.at(1)].y - tofEvents[pl][fired.at(0)].y );
-						// 2D spread
-					h2DSpread[pl]->Fill( (fired.at(2) - fired.at(1)) , tofEvents[pl][fired.at(2)].y - tofEvents[pl][fired.at(1)].y );
-					h2DSpread[pl]->Fill( (fired.at(2) - fired.at(0)) , tofEvents[pl][fired.at(2)].y - tofEvents[pl][fired.at(0)].y );
-					h2DSpread[pl]->Fill( (fired.at(1) - fired.at(0)) , tofEvents[pl][fired.at(1)].y - tofEvents[pl][fired.at(0)].y );
-	
 				}
 				if( cnt == 4){
-					// Look at position difference
-					hSpatialSpread[pl]->Fill( (fired.at(3) - fired.at(2))*12.5 );
-					hSpatialSpread[pl]->Fill( (fired.at(3) - fired.at(1))*12.5 );
-					hSpatialSpread[pl]->Fill( (fired.at(3) - fired.at(0))*12.5 );
-					hSpatialSpread[pl]->Fill( (fired.at(2) - fired.at(1))*12.5 );
-					hSpatialSpread[pl]->Fill( (fired.at(2) - fired.at(0))*12.5 );
-					hSpatialSpread[pl]->Fill( (fired.at(1) - fired.at(0))*12.5 );
-					hMCSpread[pl]->Fill( randomStrips() );
-					hMCSpread[pl]->Fill( randomStrips() );
-					hMCSpread[pl]->Fill( randomStrips() );
-					hMCSpread[pl]->Fill( randomStrips() );
-					hMCSpread[pl]->Fill( randomStrips() );
-					hMCSpread[pl]->Fill( randomStrips() );
-					hYSpread[pl]->Fill( tofEvents[pl][fired.at(3)].y - tofEvents[pl][fired.at(2)].y );
-					hYSpread[pl]->Fill( tofEvents[pl][fired.at(3)].y - tofEvents[pl][fired.at(1)].y );
-					hYSpread[pl]->Fill( tofEvents[pl][fired.at(3)].y - tofEvents[pl][fired.at(0)].y );
-					hYSpread[pl]->Fill( tofEvents[pl][fired.at(2)].y - tofEvents[pl][fired.at(1)].y );
-					hYSpread[pl]->Fill( tofEvents[pl][fired.at(2)].y - tofEvents[pl][fired.at(0)].y );
-					hYSpread[pl]->Fill( tofEvents[pl][fired.at(1)].y - tofEvents[pl][fired.at(0)].y );
-					h2DSpread[pl]->Fill( (fired.at(3) - fired.at(2)) , tofEvents[pl][fired.at(3)].y - tofEvents[pl][fired.at(2)].y );
-					h2DSpread[pl]->Fill( (fired.at(3) - fired.at(1)) , tofEvents[pl][fired.at(3)].y - tofEvents[pl][fired.at(1)].y );
-					h2DSpread[pl]->Fill( (fired.at(3) - fired.at(0)) , tofEvents[pl][fired.at(3)].y - tofEvents[pl][fired.at(0)].y );
-					h2DSpread[pl]->Fill( (fired.at(2) - fired.at(1)) , tofEvents[pl][fired.at(2)].y - tofEvents[pl][fired.at(1)].y );
-					h2DSpread[pl]->Fill( (fired.at(2) - fired.at(0)) , tofEvents[pl][fired.at(2)].y - tofEvents[pl][fired.at(0)].y );
-					h2DSpread[pl]->Fill( (fired.at(1) - fired.at(0)) , tofEvents[pl][fired.at(1)].y - tofEvents[pl][fired.at(0)].y );
-					
-					// At this point, I've accounted for 98% of the data, ignore the rest. 
 				}
+				totcnt+= cnt;
 			}
+			hMult->Fill( totcnt );
 						
 
 		} // End of loop over events in file
@@ -455,22 +334,15 @@ int main(int argc, char ** argv)
 	} // End of loop over files	
 	
 	
-	TFile * outFile = new TFile("tofevents.root","RECREATE");
+	TFile * outFile = new TFile("realData.root","RECREATE");
 	outFile->cd();
+	hMult->Write();
 	for( int pl = 0; pl < 20 ; pl++){
 		hHits[pl]	-> Write();
-		hSpatialSpread[pl]->Write();
-		hMCSpread[pl]->Write();
-		hYSpread[pl]->Write();
-		h2DSpread[pl]->Write();
-		for( int st = 0 ; st < 48 ; st++){
-			hToF_All[pl][st]->Write();
-			hToF_All_2D[pl][st]->Write();
-			hToF_SingleEvents[pl][st]->Write();
-		}
 	}
 	outFile->Write();
 	outFile->Close();
+
 
 	return 0;
 }
@@ -506,13 +378,3 @@ double randomStrips(){
 	
 	return dist;
 }
-
-
-double fixWalk( double amp, double shift, double par0, double par1, double par2){
-	
-	if( par0 == -1 || par1 == -1 || par2 == -1 || shift == -1)
-		return 0;
-	
-	return par0 + par1*exp( -(amp - shift) / par2 );
-}
-

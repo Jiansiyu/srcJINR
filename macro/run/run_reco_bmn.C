@@ -137,7 +137,7 @@ void run_reco_bmn(TString inputFileName = "$VMCWORKDIR/macro/run/evetest.root",
 				if (!CheckFileExist(inputFileName)) return;
 				fFileSource = new FairFileSource(inputFileName);
 			}
-			/*
+			
 			fRunAna->SetSource(fFileSource);
 			fRunAna->SetOutputFile(bmndstFileName);
 			fRunAna->SetGenerateRunInfo(false);
@@ -173,8 +173,8 @@ void run_reco_bmn(TString inputFileName = "$VMCWORKDIR/macro/run/evetest.root",
 			// ====================================================================== //
 			// ===                         Silicon hit finder                     === //
 			// ====================================================================== //    
-			BmnSiliconHitMaker* siliconHM = new BmnSiliconHitMaker(isExp);
-			fRunAna->AddTask(siliconHM);
+			//BmnSiliconHitMaker* siliconHM = new BmnSiliconHitMaker(isExp);
+			//fRunAna->AddTask(siliconHM);
 			// ====================================================================== //
 			// ===                         GEM hit finder                         === //
 			// ====================================================================== //
@@ -213,13 +213,13 @@ void run_reco_bmn(TString inputFileName = "$VMCWORKDIR/macro/run/evetest.root",
 			// ====================================================================== //
 			// ===                           TOF2 hit finder                      === //
 			// ====================================================================== //
-			BmnTofHitProducer* tof2HP = new BmnTofHitProducer("TOF", "TOF700_geometry_run6.txt", !isExp, iVerbose, kTRUE);
-			fRunAna->AddTask(tof2HP);
+			//BmnTofHitProducer* tof2HP = new BmnTofHitProducer("TOF", "TOF700_geometry_run6.txt", !isExp, iVerbose, kTRUE);
+			//fRunAna->AddTask(tof2HP);
 			// ====================================================================== //
 			// ===                           Tracking (MWPC)                      === //
 			// ====================================================================== //
-			BmnMwpcTrackFinder* mwpcTF = new BmnMwpcTrackFinder(isExp);
-			fRunAna->AddTask(mwpcTF);
+			//BmnMwpcTrackFinder* mwpcTF = new BmnMwpcTrackFinder(isExp);
+			//fRunAna->AddTask(mwpcTF);
 			// ====================================================================== //
 			// ===                           Tracking (GEM)                       === //
 			// ====================================================================== //
@@ -233,9 +233,9 @@ void run_reco_bmn(TString inputFileName = "$VMCWORKDIR/macro/run/evetest.root",
 			// ====================================================================== //
 			// ===                           Tracking (DCH)                       === //
 			// ====================================================================== //
-			BmnDchTrackFinder* dchTF = new BmnDchTrackFinder(isExp);
-			dchTF->SetTransferFunction("pol_coord00813.txt");
-			fRunAna->AddTask(dchTF);
+			//BmnDchTrackFinder* dchTF = new BmnDchTrackFinder(isExp);
+			//dchTF->SetTransferFunction("pol_coord00813.txt");
+			//fRunAna->AddTask(dchTF);
 			// ====================================================================== //
 			// ===                          Global Tracking                       === //
 			// ====================================================================== //
@@ -288,5 +288,4 @@ void run_reco_bmn(TString inputFileName = "$VMCWORKDIR/macro/run/evetest.root",
 			cout << "Real time " << rtime << " s, CPU time " << ctime << " s" << endl;
 			cout << endl;
 			// ------------------------------------------------------------------------
-			*/
 		}
