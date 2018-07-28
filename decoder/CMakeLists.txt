@@ -5,6 +5,7 @@
 set(INCLUDE_DIRECTORIES
  ${BASE_INCLUDE_DIRECTORIES}
  ${CMAKE_SOURCE_DIR}/bmndata
+ ${CMAKE_SOURCE_DIR}/bmndata/math
  ${CMAKE_SOURCE_DIR}/gem
  ${CMAKE_SOURCE_DIR}/silicon
  ${CMAKE_SOURCE_DIR}/globaltracking
@@ -43,12 +44,13 @@ set(SRCS
  BmnSiliconRaw2Digit.cxx
  BmnRawDataDecoder.cxx
  BmnTrigRaw2Digit.cxx
+ BmnCscRaw2Digit.cxx
 )
 
 Set(HEADERS)
 
 Set(LINKDEF DecoderLinkDef.h)
 Set(LIBRARY_NAME Decoder)
-Set(DEPENDENCIES BmnData Core Base)
+Set(DEPENDENCIES Core Base BmnData UniDb)
 
 GENERATE_LIBRARY()

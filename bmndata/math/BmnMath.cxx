@@ -176,7 +176,7 @@ TVector3 SpiralFit(BmnGemTrack* tr, const TClonesArray* arr) {
     return TVector3(a, b, 1 / k);
 }
 
-Bool_t IsParCorrect(const FairTrackParam* par) {
+Bool_t IsParCorrect(const FairTrackParam* par, const Bool_t isField) {
     const Float_t maxSlopeX = 5.;
     const Float_t maxSlopeY = 0.5;
     const Float_t maxX = 150.0;
@@ -184,9 +184,14 @@ Bool_t IsParCorrect(const FairTrackParam* par) {
     const Float_t minSlope = 1e-10;
     const Float_t maxQp = 1000.; // p = 10 MeV
 
-    if (abs(par->GetTx()) > maxSlopeX || abs(par->GetTy()) > maxSlopeY || abs(par->GetTx()) < minSlope || abs(par->GetTy()) < minSlope || abs(par->GetQp()) > maxQp) return kFALSE;
+    if (abs(par->GetTx()) > maxSlopeX || abs(par->GetTy()) > maxSlopeY || abs(par->GetTx()) < minSlope || abs(par->GetTy()) < minSlope) return kFALSE;
     if (abs(par->GetX()) > maxX || abs(par->GetY()) > maxY) return kFALSE;
-    if (IsNaN(par->GetX()) || IsNaN(par->GetY()) || IsNaN(par->GetTx()) || IsNaN(par->GetTy()) || IsNaN(par->GetQp())) return kFALSE;
+    if (IsNaN(par->GetX()) || IsNaN(par->GetY()) || IsNaN(par->GetTx()) || IsNaN(par->GetTy())) return kFALSE;
+    
+    if (isField) {
+        if (abs(par->GetQp()) > maxQp) return kFALSE;
+        if (IsNaN(par->GetQp())) return kFALSE;
+    }
 
     return kTRUE;
 }
@@ -253,15 +258,15 @@ TVector3 LineFit(BmnTrack* track, const TClonesArray* arr, TString type) {
     Float_t SumWXY = 0.0; // sum of (weight * x * y)
     Float_t SumWX2 = 0.0; // sum of (weight * x * x)
 
-  //  TH2F* h_Hits = new TH2F("h_Hits", "h_Hits", 400, 0.0, 250.0, 400, -10.0, 10.0);
-  //  TH2F* h_HitsAll = new TH2F("h_HitsAll", "h_HitsAll", 400, 0.0, 250.0, 400, -10.0, 10.0);
+    //  TH2F* h_Hits = new TH2F("h_Hits", "h_Hits", 400, 0.0, 250.0, 400, -10.0, 10.0);
+    //  TH2F* h_HitsAll = new TH2F("h_HitsAll", "h_HitsAll", 400, 0.0, 250.0, 400, -10.0, 10.0);
 
     const Float_t nHits = track->GetNHits();
 
-//    for (Int_t iHit = 0; iHit < arr->GetEntriesFast(); iHit++) {
-//        BmnGemStripHit* hit = (BmnGemStripHit*) arr->At(iHit);
-//        h_HitsAll->Fill(hit->GetZ(), hit->GetX());
-//    }
+    //    for (Int_t iHit = 0; iHit < arr->GetEntriesFast(); iHit++) {
+    //        BmnGemStripHit* hit = (BmnGemStripHit*) arr->At(iHit);
+    //        h_HitsAll->Fill(hit->GetZ(), hit->GetX());
+    //    }
 
     for (Int_t i = 0; i < nHits; ++i) {
         BmnHit* hit = (BmnHit*) arr->At(track->GetHitIndex(i));
@@ -273,7 +278,7 @@ TVector3 LineFit(BmnTrack* track, const TClonesArray* arr, TString type) {
             Xi = hit->GetZ();
             Yi = hit->GetX();
             Si = hit->GetDx();
-         //   h_Hits->Fill(hit->GetZ(), hit->GetX());
+            //   h_Hits->Fill(hit->GetZ(), hit->GetX());
         } else if (type.Contains("ZY")) {
             Xi = hit->GetZ();
             Yi = hit->GetY();
@@ -294,28 +299,28 @@ TVector3 LineFit(BmnTrack* track, const TClonesArray* arr, TString type) {
     b = (SumWX2 * SumWY - SumWX * SumWXY) / (SumW * SumWX2 - SumWX * SumWX);
 
     // z1, x1, z2, x2
- //   TLine* line = new TLine();
+    //   TLine* line = new TLine();
     // line->SetFillStyle(0);
-//    line->SetLineWidth(2);
-//    line->SetLineColor(kBlue);
+    //    line->SetLineWidth(2);
+    //    line->SetLineColor(kBlue);
     // line->SetNoEdges(1);
 
-//    TCanvas* c_New = new TCanvas("c", "c", 1000, 500);
-//    c_New->cd();
-//    h_Hits->SetMarkerStyle(20);
-//    h_Hits->SetMarkerSize(1.5);
-//    h_Hits->SetMarkerColor(kRed);
-//    h_Hits->Draw("P");
-//    h_HitsAll->SetMarkerStyle(20);
-//    h_HitsAll->SetMarkerSize(0.75);
-//    h_HitsAll->SetMarkerColor(kBlue);
-//    h_HitsAll->Draw("Psame");
-//    line->Draw("same");
-//    c_New->SaveAs("hits.png");
-//    getchar();
-//    delete h_Hits;
-//    delete c_New;
-//    delete line;
+    //    TCanvas* c_New = new TCanvas("c", "c", 1000, 500);
+    //    c_New->cd();
+    //    h_Hits->SetMarkerStyle(20);
+    //    h_Hits->SetMarkerSize(1.5);
+    //    h_Hits->SetMarkerColor(kRed);
+    //    h_Hits->Draw("P");
+    //    h_HitsAll->SetMarkerStyle(20);
+    //    h_HitsAll->SetMarkerSize(0.75);
+    //    h_HitsAll->SetMarkerColor(kBlue);
+    //    h_HitsAll->Draw("Psame");
+    //    line->Draw("same");
+    //    c_New->SaveAs("hits.png");
+    //    getchar();
+    //    delete h_Hits;
+    //    delete c_New;
+    //    delete line;
 
     Float_t chi2 = 0.0;
 
@@ -426,7 +431,7 @@ TVector3 CircleFit(BmnGemTrack* track, const TClonesArray* arr, Double_t &chi2) 
     Double_t Szx = 0.0;
     Double_t Szy = 0.0;
 
-//        TH2F* h_Hits = new TH2F("h_Hits", "h_Hits", 400, 0.0, 250.0, 400, -10.0, 10.0);
+    //        TH2F* h_Hits = new TH2F("h_Hits", "h_Hits", 400, 0.0, 250.0, 400, -10.0, 10.0);
 
     const Float_t nHits = track->GetNHits();
     for (Int_t i = 0; i < nHits; ++i) {
@@ -434,7 +439,7 @@ TVector3 CircleFit(BmnGemTrack* track, const TClonesArray* arr, Double_t &chi2) 
         //Use Z and X coordinates of hits to fit in ZX plane
         Yi = hit->GetZ();
         Xi = hit->GetX();
-//                h_Hits->Fill(hit->GetZ(), hit->GetX());
+        //                h_Hits->Fill(hit->GetZ(), hit->GetX());
         Zi = Xi * Xi + Yi * Yi;
         Wi = 1.0 / hit->GetDx() / hit->GetDx();
 
@@ -456,28 +461,28 @@ TVector3 CircleFit(BmnGemTrack* track, const TClonesArray* arr, Double_t &chi2) 
     Zc = -0.5 * C;
     R = Sqrt(0.25 * B * B + 0.25 * C * C - D);
 
-//        BmnGemStripHit* hitF = (BmnGemStripHit*) arr->At(track->GetHitIndex(0));
-//        BmnGemStripHit* hitL = (BmnGemStripHit*) arr->At(track->GetHitIndex(nHits - 1));
+    //        BmnGemStripHit* hitF = (BmnGemStripHit*) arr->At(track->GetHitIndex(0));
+    //        BmnGemStripHit* hitL = (BmnGemStripHit*) arr->At(track->GetHitIndex(nHits - 1));
 
     //    
-//        TArc* arc = new TArc(Zc, Xc, R, ATan2((hitF->GetX() - Xc), (hitF->GetZ() - Zc)) * RadToDeg(), ATan2((hitL->GetX() - Xc), (hitL->GetZ() - Zc)) * RadToDeg());
-//        arc->SetFillStyle(0);
-//        arc->SetLineWidth(2);
-//        arc->SetLineColor(kBlue);
-//        arc->SetNoEdges(1);
-//        
-//        TCanvas* c_New = new TCanvas("c", "c", 1000, 500);
-//        c_New->cd();
-//        h_Hits->SetMarkerStyle(20);
-//        h_Hits->SetMarkerSize(1.5);
-//        h_Hits->SetMarkerColor(kRed);
-//        h_Hits->Draw("P");
-//        arc->Draw("same");
-//        c_New->SaveAs("hits.png");
-//        getchar();
-//        delete h_Hits;
-//        delete c_New;
-//        delete arc;
+    //        TArc* arc = new TArc(Zc, Xc, R, ATan2((hitF->GetX() - Xc), (hitF->GetZ() - Zc)) * RadToDeg(), ATan2((hitL->GetX() - Xc), (hitL->GetZ() - Zc)) * RadToDeg());
+    //        arc->SetFillStyle(0);
+    //        arc->SetLineWidth(2);
+    //        arc->SetLineColor(kBlue);
+    //        arc->SetNoEdges(1);
+    //        
+    //        TCanvas* c_New = new TCanvas("c", "c", 1000, 500);
+    //        c_New->cd();
+    //        h_Hits->SetMarkerStyle(20);
+    //        h_Hits->SetMarkerSize(1.5);
+    //        h_Hits->SetMarkerColor(kRed);
+    //        h_Hits->Draw("P");
+    //        arc->Draw("same");
+    //        c_New->SaveAs("hits.png");
+    //        getchar();
+    //        delete h_Hits;
+    //        delete c_New;
+    //        delete arc;
 
     for (Int_t i = 0; i < nHits; ++i) {
         BmnGemStripHit* hit = (BmnGemStripHit*) arr->At(track->GetHitIndex(i));
@@ -814,10 +819,107 @@ void Pol2Fit(BmnGemTrack* track, const TClonesArray* arr, Double_t &A, Double_t 
         if (i == idSkip) continue;
         BmnGemStripHit* hit = (BmnGemStripHit*) arr->At(track->GetHitIndex(i));
         gr->SetPoint(iPoint++, hit->GetZ(), hit->GetX());
-    }    
+    }
     TFitResultPtr ptr = gr->Fit("pol2", "SQ");
     delete gr;
     A = ptr->Parameter(2);
     B = ptr->Parameter(1);
     C = ptr->Parameter(0);
+}
+
+vector <Double_t> dist(vector <Double_t> qp, Double_t mu) {
+    vector <Double_t> res;
+    for (Int_t iEle = 0; iEle < qp.size(); iEle++)
+        res.push_back(Abs(qp[iEle] - mu));
+
+    return res;
+}
+
+vector <Double_t> W(vector <Double_t> dist, Double_t sig) {
+    vector <Double_t> res;
+    const Int_t C = 10;
+    for (Int_t iEle = 0; iEle < dist.size(); iEle++) {
+        Double_t w = (dist[iEle] > C * sig) ? 0. : Power(1 - Power(dist[iEle] / C / sig, 2), 2);
+        res.push_back(w);
+    }
+
+    return res;
+}
+
+Double_t Sigma(vector <Double_t> dist, vector <Double_t> w) {
+    if (dist.size() != w.size())
+        throw;
+
+    Double_t WiDi2Sum = 0.;
+    Double_t WiSum = 0.;
+
+    for (Int_t iEle = 0; iEle < dist.size(); iEle++) {
+        WiSum += w[iEle];
+        WiDi2Sum += w[iEle] * dist[iEle] * dist[iEle];
+    }
+
+    return Sqrt(WiDi2Sum / WiSum);
+}
+
+Double_t Mu(vector <Double_t> qp, vector <Double_t> w) {
+    if (qp.size() != w.size())
+        throw;
+
+    Double_t WiQpSum = 0.;
+    Double_t WiSum = 0.;
+
+    for (Int_t iEle = 0; iEle < qp.size(); iEle++) {
+        WiSum += w[iEle];
+        WiQpSum += w[iEle] * qp[iEle];
+    }
+
+    return WiQpSum / WiSum;
+}
+
+//void DrawBar(Int_t iEv, Int_t nEv) {
+//    cout.flush();
+//    Float_t progress = iEv * 1.0 / nEv;
+//    Int_t barWidth = 70;
+//    printf(ANSI_COLOR_BLUE "[");
+//
+//    Int_t pos = barWidth * progress;
+//    for (Int_t i = 0; i < barWidth; ++i) {
+//        if (i < pos) printf("=");
+//        else if (i == pos) printf(">");
+//        else printf(" ");
+//    }
+//
+//    printf("] " ANSI_COLOR_RESET);
+//    printf(ANSI_COLOR_RED "%d%%\r" ANSI_COLOR_RESET, Int_t(progress * 100.0 + 0.5));
+//    cout.flush();
+//}
+
+void DrawBar(UInt_t iEv, UInt_t nEv) {
+    cout.flush();
+    Float_t progress = iEv * 1.0 / nEv;
+    Int_t barWidth = 70;
+
+    Int_t pos = barWidth * progress;
+    for (Int_t i = 0; i < barWidth; ++i) {
+        if (i <= pos) printf(ANSI_COLOR_BLUE_BG " " ANSI_COLOR_RESET);
+        else printf(ANSI_COLOR_YELLOW_BG " " ANSI_COLOR_RESET);
+    }
+
+    printf(ANSI_COLOR_RED "[%d%%]\r" ANSI_COLOR_RESET, Int_t(progress * 100.0 + 0.5));
+    cout.flush();
+}
+
+void DrawBar(Long64_t iEv, Long64_t nEv) {
+    cout.flush();
+    Float_t progress = iEv * 1.0 / nEv;
+    Int_t barWidth = 70;
+
+    Int_t pos = barWidth * progress;
+    for (Int_t i = 0; i < barWidth; ++i) {
+        if (i <= pos) printf(ANSI_COLOR_BLUE_BG " " ANSI_COLOR_RESET);
+        else printf(ANSI_COLOR_YELLOW_BG " " ANSI_COLOR_RESET);
+    }
+
+    printf(ANSI_COLOR_RED "[%d%%]\r" ANSI_COLOR_RESET, Int_t(progress * 100.0 + 0.5));
+    cout.flush();
 }

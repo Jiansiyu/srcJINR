@@ -31,6 +31,7 @@
 #include "BmnECALRaw2Digit.h"
 #include "BmnLANDRaw2Digit.h"
 #include "BmnTrigRaw2Digit.h"
+#include "BmnCscRaw2Digit.h"
 #include "BmnEventHeader.h"
 #include "BmnRunHeader.h"
 #include "BmnEnums.h"
@@ -92,9 +93,6 @@ const UInt_t kGEMTRIGTYPE = 3;
 const UInt_t kTRIGBEAM = 6;
 const UInt_t kTRIGMINBIAS = 1;
 
-#define ANSI_COLOR_RED   "\x1b[91m"
-#define ANSI_COLOR_BLUE  "\x1b[94m"
-#define ANSI_COLOR_RESET "\x1b[0m"
 /********************************************************/
 // wait limit for input data (ms)
 #define WAIT_LIMIT 40000000
@@ -145,6 +143,7 @@ class BmnRawDataDecoder {
 			DigiArrays d; // = new DigiArrays();
 			d.silicon = silicon;
 			d.gem = gem;
+			d.csc = csc;
 			d.tof400 = tof400;
 			d.tof700 = tof700;
 			d.zdc = zdc;
@@ -247,7 +246,7 @@ class BmnRawDataDecoder {
 		}
 
 		void SetCSCMapping(TString map) {
-			fCSCMapFileName = map;
+			fCscMapFileName = map;
 		}
 
 
@@ -275,6 +274,8 @@ class BmnRawDataDecoder {
 		void SetTof700Geom(TString geom) {
 			fTof700GeomFileName = geom;
 		}
+		
+		void SetTof700SlewingReference(Int_t chamber, Int_t refrun, Int_t refchamber);
 
 		void SetZDCMapping(TString map) {
 			fZDCMapFileName = map;
@@ -361,8 +362,8 @@ class BmnRawDataDecoder {
 		UInt_t fNSiliconSerials;
 		vector<UInt_t> fGemSerials; //list of serial id for GEM
 		UInt_t fNGemSerials;
-		vector<UInt_t> fCSCSerials; //list of serial id for CSC
-		UInt_t fNCSCSerials;
+		vector<UInt_t> fCscSerials; //list of serial id for CSC
+		UInt_t fNCscSerials;
 		vector<UInt_t> fZDCSerials; //list of serial id for ZDC
 		UInt_t fNZDCSerials;
 		vector<UInt_t> fECALSerials; //list of serial id for ECal
@@ -410,7 +411,7 @@ class BmnRawDataDecoder {
 		TString fLANDDiffSyncFileName;
 		TString fLANDVScintFileName;
 		TString fSiliconMapFileName;
-		TString fCSCMapFileName;
+		TString fCscMapFileName;
 
 		TString fTrigPlaceMapFileName;	
 		TString fTrigDetMapFileName  ;	
@@ -422,6 +423,7 @@ class BmnRawDataDecoder {
 		ifstream fDchMapFile;
 		ifstream fMwpcMapFile;
 		ifstream fGemMapFile;
+		ifstream fCscMapFile;
 		ifstream fTof400MapFile;
 		ifstream fTof700MapFile;
 		ifstream fZDCMapFile;
@@ -453,6 +455,7 @@ class BmnRawDataDecoder {
 		//Digi arrays
 		TClonesArray *silicon;
 		TClonesArray *gem;
+		TClonesArray *csc;
 		TClonesArray *tof400;
 		TClonesArray *tof700;
 		TClonesArray *zdc;
@@ -471,6 +474,7 @@ class BmnRawDataDecoder {
 
 		UInt_t fDat; //current 32-bits word
 		UInt_t syncCounter;
+		BmnCscRaw2Digit *fCscMapper;
 		BmnGemRaw2Digit *fGemMapper;
 		BmnSiliconRaw2Digit *fSiliconMapper;
 		BmnDchRaw2Digit *fDchMapper;
@@ -495,6 +499,10 @@ class BmnRawDataDecoder {
 		map<UInt_t, Long64_t> fTimeShifts;
 		Double_t fT0Time; //ns
 		Double_t fT0Width; //ns
+    
+		int refrun_tof700_slewing[60];
+		int refchamber_tof700_slewing[60];
+		int type_tof700_slewing[60];
 
 		BmnStatus GetT0Info(Double_t& t0time, Double_t &t0width);
 		BmnStatus ProcessEvent(UInt_t *data, UInt_t len);

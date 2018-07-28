@@ -1,7 +1,7 @@
 
 #include "BmnRawDataDecoder.h"
 
-//#include <pthread.h>
+#include <BmnMath.h>
 #include <sys/stat.h>
 #include <arpa/inet.h> /* For ntohl for Big Endian LAND. */
 
@@ -64,6 +64,7 @@ BmnRawDataDecoder::BmnRawDataDecoder() {
 	
 
 	fGemMapFileName = "";
+	fCscMapFileName = "";
 	fTof400StripMapFileName = "";
 	fTof400PlaceMapFileName = "";
 	fTof700MapFileName = "";
@@ -79,6 +80,7 @@ BmnRawDataDecoder::BmnRawDataDecoder() {
 	fLANDVScintFileName = "";
 	fDat = 0;
 	fGemMapper = NULL;
+	fCscMapper = NULL;
 	fDchMapper = NULL;
 	fTrigMapper = NULL;
 	fTof400Mapper = NULL;
@@ -149,6 +151,7 @@ BmnRawDataDecoder::BmnRawDataDecoder(TString file, ULong_t nEvents, ULong_t peri
 	fTrigINLTDC1FileName = "";	// For TDC74VHL
 	fTrigINLTDC2FileName = "";	// For TDC32
 	fGemMapFileName = "";
+	fCscMapFileName = "";
 	fTof400StripMapFileName = "";
 	fTof400PlaceMapFileName = "";
 	fTof700MapFileName = "";
@@ -164,6 +167,7 @@ BmnRawDataDecoder::BmnRawDataDecoder(TString file, ULong_t nEvents, ULong_t peri
 	fLANDVScintFileName = "";
 	fDat = 0;
 	fGemMapper = NULL;
+	fCscMapper = NULL;
 	fDchMapper = NULL;
 	fTrigMapper = NULL;
 	fTof400Mapper = NULL;
@@ -336,11 +340,8 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 	eventHeaderDAQ->Delete();
 	BmnTrigInfo* trigInfo = new BmnTrigInfo();
 
-	if (fEventId % 100 == 0) {
-		printf(ANSI_COLOR_BLUE "[%.2f%%]   " ANSI_COLOR_RESET, fCurentPositionRawFile * 100.0 / fLengthRawFile);
-		printf("EVENT:%d   RUN:%d\n", d[0], fRunId);
-	}
-	//printf(ANSI_COLOR_BLUE "NEW EVENT\n" ANSI_COLOR_RESET);
+	DrawBar(fCurentPositionRawFile, fLengthRawFile);
+	
 	Long64_t idx = 1;
 	BmnEventType evType = kBMNPAYLOAD;
 
@@ -353,7 +354,6 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 			printf("[WARNING] Event %d:\n serial = 0x%06X\n id = Ox%02X\n payload = %d\n", fEventId, serial, id, payload);
 			break;
 		}
-		//printf("Before procesEvent read: %i\n",idx);
 		switch (id) {
 			case kADC64VE_XGE:
 			case kADC64VE:
@@ -361,21 +361,21 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 					Bool_t isFound = kFALSE;
 					for (Int_t iSer = 0; iSer < fNSiliconSerials; ++iSer)
 						if (serial == fSiliconSerials[iSer]) {
-							//Process_ADC64VE(&d[idx], payload, serial, 128, adc128);
+							Process_ADC64VE(&d[idx], payload, serial, 128, adc128);
 							isFound = kTRUE;
 							break;
 						}
 					if (isFound) break;
 					for (Int_t iSer = 0; iSer < fNGemSerials; ++iSer)
 						if (serial == fGemSerials[iSer]) {
-							//Process_ADC64VE(&d[idx], payload, serial, 32, adc32);
+							Process_ADC64VE(&d[idx], payload, serial, 32, adc32);
 							isFound = kTRUE;
 							break;
 						}
 					if (isFound) break;
-					for (Int_t iSer = 0; iSer < fNCSCSerials; ++iSer)
-						if (serial == fCSCSerials[iSer]) {
-							//Process_ADC64VE(&d[idx], payload, serial, 32, adc32);
+					for (Int_t iSer = 0; iSer < fNCscSerials; ++iSer)
+						if (serial == fCscSerials[iSer]) {
+							Process_ADC64VE(&d[idx], payload, serial, 32, adc32);
 							isFound = kTRUE;
 							break;
 						}
@@ -392,7 +392,7 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 						}
 					};
 					if (isZDC)
-						0.;//Process_ADC64WR(&d[idx], payload, serial, adc);
+						Process_ADC64WR(&d[idx], payload, serial, adc);
 					else {
 						for (Int_t iSer = 0; (iSer < fNECALSerials); ++iSer) {
 							if (serial == fECALSerials[iSer]) {
@@ -401,7 +401,7 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 							}
 						};
 						if (isECAL)
-							0.;//Process_ADC64WR(&d[idx], payload, serial, adc);
+							Process_ADC64WR(&d[idx], payload, serial, adc);
 					}
 					//if (isECAL) printf("Serial 0x%08x %d %d\n",serial,isZDC,isECAL);
 					break;
@@ -416,9 +416,7 @@ BmnStatus BmnRawDataDecoder::ProcessEvent(UInt_t *d, UInt_t len) {
 				Process_Tacquila(&d[idx], payload);
 				break;
 		}
-		//printf("After procesEvent read: %i\n",idx);
 		idx += payload;
-		//printf("After adding payload %i\n",idx);
 	}
 	//printf("eventHeaderDAQ->GetEntriesFast() %d  eventID %d\n", eventHeaderDAQ->GetEntriesFast(), fEventId);
 	new((*eventHeaderDAQ)[eventHeaderDAQ->GetEntriesFast()]) BmnEventHeader(fRunId, fEventId, TDatime(Int_t(TTimeStamp(time_t(fTime_s), fTime_ns).GetDate(kFALSE)), Int_t(TTimeStamp(time_t(fTime_s), fTime_ns).GetTime(kFALSE))), evType, kFALSE, trigInfo);
@@ -584,7 +582,7 @@ BmnStatus BmnRawDataDecoder::Process_FVME(UInt_t *d, UInt_t len, UInt_t serial, 
 							FillTQDC(d, serial, slot, modId, i);
 							break;
 						case kMSC:
-							//FillMSC(d, serial, i); //empty now
+							FillMSC(d, serial, i); //empty now
 							break;
 						case kTRIG: // this one is okay; bit silly it doesn't return an index
 							    // past the ones it's read, but it's fine because there is
@@ -718,6 +716,7 @@ BmnStatus BmnRawDataDecoder::FillU40VE(UInt_t *d, BmnEventType &evType, UInt_t s
 	UInt_t type = d[idx] >> 28;
 	Bool_t countersDone = kFALSE;
 	while (type == 2 || type == 3 || type == 4) {
+	
 		if( ( (type == 3) && (slot == 12) ) ){
 			if( !((d[idx] >> 16) & 0x1)){
 				printf(ANSI_COLOR_RED "ERROR: Trigger source NOT external!\n" ANSI_COLOR_RESET);
@@ -942,13 +941,13 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 	BmnEventType curEventType = kBMNPAYLOAD;
 	BmnEventType prevEventType = curEventType;
 	
-	if (fGemMapper || fSiliconMapper) {
+	if (fGemMapper || fSiliconMapper || fCscMapper) {
+		printf("\n[INFO]");
+		printf(ANSI_COLOR_BLUE " Collecting data for ADC pedestals calculation:\n" ANSI_COLOR_RESET);
+		printf("\tNumber of requested pedestal events is ");
+		printf(ANSI_COLOR_RED "%d\n" ANSI_COLOR_RESET, fEvForPedestals); 
 		for (UInt_t iEv = 0; iEv < fNevents; ++iEv) {
-			if (iEv % 100 == 0) {
-				printf(ANSI_COLOR_BLUE "[%.2f%%]   " ANSI_COLOR_RESET, iEv * 100.0 / fNevents);
-				printf("EVENT:%d   RUN:%d\n", iEv, fRunId);
-			}
-
+			DrawBar(fPedEvCntr, fEvForPedestals);
 			fRawTree->GetEntry(iEv);
 
 			BmnEventHeader* headDAQ = (BmnEventHeader*) eventHeaderDAQ->At(0);
@@ -959,13 +958,40 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 			if (fPedEvCntr != fEvForPedestals - 1) {
 				CopyDataToPedMap(adc32, adc128, fPedEvCntr);
 				fPedEvCntr++;
-			} else {
-				if (fGemMapper) fGemMapper->RecalculatePedestals();
-				if (fSiliconMapper) fSiliconMapper->RecalculatePedestals();
-				fPedEvCntr = 0;
-				break;
-			}
+			} else break;
 		}
+		if (fPedEvCntr != fEvForPedestals - 1) {
+			printf(ANSI_COLOR_RED "\n[WARNING]" ANSI_COLOR_RESET);
+			printf(" Not enough pedestal events (%d instead of %d)\n", fPedEvCntr, fEvForPedestals);
+		}
+		if (fGemMapper) fGemMapper->RecalculatePedestals();
+		if (fSiliconMapper) fSiliconMapper->RecalculatePedestals();
+		if (fCscMapper) fCscMapper->RecalculatePedestals();
+		fPedEvCntr = 0;
+
+		UInt_t nEvForNoiseCorrection = 10000;
+		printf("\n[INFO]");
+		printf(ANSI_COLOR_BLUE " Clear noisy channels:\n" ANSI_COLOR_RESET);
+		printf("\tFilling signal profiles for station-module-layer histograms\n");
+		printf("\tNumber of requested events is ");
+		printf(ANSI_COLOR_RED "%d\n" ANSI_COLOR_RESET, nEvForNoiseCorrection);
+		printf("\tActual number of events is ");
+		printf(ANSI_COLOR_RED "%d\n" ANSI_COLOR_RESET, fNevents);
+
+		UInt_t n = Min(fNevents, nEvForNoiseCorrection);
+		for (UInt_t iEv = 0; iEv < n; ++iEv) {
+			fRawTree->GetEntry(iEv);
+			if (fGemMapper) fGemMapper->FillProfiles(adc32);
+			if (fSiliconMapper) fSiliconMapper->FillProfiles(adc128);
+			if (fCscMapper) fCscMapper->FillProfiles(adc32);
+			DrawBar(iEv, n);
+		}
+
+		printf("\n\tChecking noisy channels\n");
+		if (fGemMapper) fGemMapper->FillNoisyChannels();
+		if (fSiliconMapper) fSiliconMapper->FillNoisyChannels();
+		if (fCscMapper) fCscMapper->FillNoisyChannels();
+		printf("\tNoisy channels marked\n");
 	}
 
 	Int_t nEv = -1;
@@ -974,11 +1000,11 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 	vector<UInt_t> startTripEvent;
 	vector<UInt_t> endTripEvent;
 
+	printf("\n[INFO]");
+	printf(ANSI_COLOR_BLUE " Main loop over events:\n" ANSI_COLOR_RESET);
 	for (UInt_t iEv = 0; iEv < fNevents; ++iEv) {
-		if (iEv % 100 == 0) {
-			printf(ANSI_COLOR_BLUE "[%.2f%%]   " ANSI_COLOR_RESET, iEv * 100.0 / fNevents);
-			printf("EVENT:%d   RUN:%d\n", iEv, fRunId);
-		}
+
+		DrawBar(iEv, fNevents);
 		ClearArrays();
 
 		fRawTree->GetEntry(iEv);
@@ -995,42 +1021,12 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 			fRunStartTime = runHeaderDAQ->GetStartTime();
 			fRunEndTime = runHeaderDAQ->GetFinishTime();
 
-			// Stuff for GEM I don't care about??
-			/*
 			if (!UniDbRun::GetRun(fPeriodId, runId))
 				UniDbRun::CreateRun(fPeriodId, runId, TString::Format("/nica/data4mpd1/dataBMN/bmndata2/run6/raw/mpd_run_Glob_%d.data", runId), "", NULL, NULL, fRunStartTime, &fRunEndTime, &nEv, NULL, &fSize, NULL);
-
-			//check for trip information
-			UniDbTangoData db_tango;
-			enumConditions condition = conditionEqual;
-			bool condition_value = 1;
-			int map_channel[] = {1, 3, 0, 5, 2, 6, 4};
-			TString date_start = fRunStartTime.AsSQLString(); // 1252 run
-			TString date_end = fRunEndTime.AsSQLString();
-
-			UInt_t runLength = fRunEndTime.Convert() - fRunStartTime.Convert(); //in seconds
-			Double_t timeStep = runLength * 1.0 / fNevents; //time for one event
-			printf("Run duration = %d sec.\t TimeStep = %f sec./event\n", runLength, timeStep);
-		
-			TObjArray* tango_data_gem = db_tango.SearchTangoIntervals((char*) "gem", (char*) "trip", (char*) date_start.Data(), (char*) date_end.Data(), condition, condition_value, map_channel);
-			if (tango_data_gem) {
-				for (Int_t i = 0; i < tango_data_gem->GetEntriesFast(); ++i) {
-					TObjArray* currGemTripInfo = (TObjArray*) tango_data_gem->At(i);
-					if (currGemTripInfo->GetEntriesFast() != 0)
-						for (Int_t j = 0; j < currGemTripInfo->GetEntriesFast(); ++j) {
-							TangoTimeInterval* ti = (TangoTimeInterval*) currGemTripInfo->At(j);
-							startTripEvent.push_back(UInt_t((ti->start_time.Convert() - fRunStartTime.Convert()) / timeStep));
-							endTripEvent.push_back(UInt_t((ti->end_time.Convert() - fRunStartTime.Convert()) / timeStep));
-						}
-				}
-			}
-			*/
 		}
 		
 		curEventType = headDAQ->GetType();
 
-		// Stuff for GEM I don't care about??
-		/*
 		Bool_t isTripEvent = kFALSE;
 		for (Int_t iTrip = 0; iTrip < startTripEvent.size(); ++iTrip) {
 			if (headDAQ->GetEventId() > startTripEvent[iTrip] && headDAQ->GetEventId() < endTripEvent[iTrip]) {
@@ -1038,40 +1034,37 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 				break;
 			}
 		}	
-		*/
 
 		if (fTrigMapper) {
 			fTrigMapper->FillEvent(tqdc_tdc, tqdc_adc);
 			fTrigMapper->FillEvent(tdc);
 		}
-
 		fT0Time = 0.;
 		fT0Width = -1.;
 		GetT0Info(fT0Time, fT0Width);
-		Bool_t isTripEvent = kFALSE;
 		new((*eventHeader)[eventHeader->GetEntriesFast()]) BmnEventHeader(headDAQ->GetRunId(), headDAQ->GetEventId(), headDAQ->GetEventTime(), curEventType, isTripEvent, headDAQ->GetTrigInfo(), fTimeShifts);
 		BmnEventHeader* evHdr = (BmnEventHeader*) eventHeader->At(eventHeader->GetEntriesFast() - 1);
 		evHdr->SetStartSignalInfo(fT0Time, fT0Width);
 
-		
 		if (curEventType == kBMNPEDESTAL) {
 			if (fPedEvCntr == fEvForPedestals - 1) continue;
-			//CopyDataToPedMap(adc32, adc128, fPedEvCntr);
+			CopyDataToPedMap(adc32, adc128, fPedEvCntr);
 			fPedEvCntr++;
 		} else { // payload
 			if (prevEventType == kBMNPEDESTAL && fPedEvCntr == fEvForPedestals - 1) {
-				//if (fGemMapper) fGemMapper->RecalculatePedestals();
-				//if (fSiliconMapper) fSiliconMapper->RecalculatePedestals();
+				if (fGemMapper) fGemMapper->RecalculatePedestals();
+				if (fSiliconMapper) fSiliconMapper->RecalculatePedestals();
 				fPedEvCntr = 0;
 			}
-			//if (fGemMapper) fGemMapper->FillEvent(adc32, gem);
-			//if (fSiliconMapper) fSiliconMapper->FillEvent(adc128, silicon);
+			if (fCscMapper) fCscMapper->FillEvent(adc32, csc);
+			if (fGemMapper) fGemMapper->FillEvent(adc32, gem);
+			if (fSiliconMapper) fSiliconMapper->FillEvent(adc128, silicon);
 			if (fDchMapper) fDchMapper->FillEvent(tdc, &fTimeShifts, dch, fT0Time);
 			if (fMwpcMapper) fMwpcMapper->FillEvent(hrb, mwpc);
 			if (fTof400Mapper && fT0Time != 0. && fT0Width != -1.) fTof400Mapper->FillEvent(tdc, &fTimeShifts, tof400);
 			if (fTof700Mapper && fT0Time != 0. && fT0Width != -1.) fTof700Mapper->fillEvent(tdc, &fTimeShifts, fT0Time, fT0Width, tof700);
-			//if (fZDCMapper) fZDCMapper->fillEvent(adc, zdc);
-			//if (fECALMapper) fECALMapper->fillEvent(adc, ecal);
+			if (fZDCMapper) fZDCMapper->fillEvent(adc, zdc);
+			if (fECALMapper) fECALMapper->fillEvent(adc, ecal);
 			if (fLANDMapper) fLANDMapper->fillEvent(tacquila, land);
 		}
 
@@ -1079,7 +1072,6 @@ BmnStatus BmnRawDataDecoder::DecodeDataToDigi() {
 		fDigiTree->Fill();
 		prevEventType = curEventType;
 	}
-
 	
 	printf(ANSI_COLOR_RED "\n=============== RUN" ANSI_COLOR_RESET);
 	printf(ANSI_COLOR_BLUE " %04d " ANSI_COLOR_RESET, runId);
@@ -1197,6 +1189,13 @@ BmnStatus BmnRawDataDecoder::InitDecoder() {
 		fDigiTree->Branch("TOF700", &tof700);
 		fTof700Mapper = new BmnTof2Raw2DigitNew(fTof700MapFileName, fRootFileName, fTOF700ReferenceRun, fTOF700ReferenceChamber, fTof700GeomFileName);
 		//        fTof700Mapper->print();
+		for (int i=0; i<60; i++)
+		{
+			if (type_tof700_slewing[i])
+			{
+				fTof700Mapper->SetSlewingReference(i+1,refrun_tof700_slewing[i],refchamber_tof700_slewing[i]);
+			}
+		}
 		fTof700Mapper->readSlewingT0();
 		fTof700Mapper->readSlewing();
 		fTof700Mapper->BookSlewingResults();
@@ -1230,6 +1229,12 @@ BmnStatus BmnRawDataDecoder::InitDecoder() {
 				fLANDVScintFileName);
 	}
 
+	if (fDetectorSetup[10]) {
+		csc = new TClonesArray("BmnCscDigit");
+		fDigiTree->Branch("CSC", &csc);
+		fCscMapper = new BmnCscRaw2Digit(fPeriodId, fRunId, fCscSerials);
+	}
+
 	fPedEvCntr = 0; // counter for pedestal events between two spills
 	fPedEnough = kFALSE;
 	return kBMNSUCCESS;
@@ -1239,6 +1244,7 @@ BmnStatus BmnRawDataDecoder::ClearArrays() {
 	if (dch) dch->Delete();
 	if (mwpc) mwpc->Delete();
 	if (gem) gem->Delete();
+	if (csc) csc->Delete();
 	if (silicon) silicon->Delete();
 	if (tof400) tof400->Delete();
 	if (tof700) tof700->Delete();
@@ -1280,6 +1286,7 @@ BmnStatus BmnRawDataDecoder::DisposeDecoder() {
 	delete tqdc_tdc;
 
 	if (gem) delete gem;
+	if (csc) delete csc;
 	if (dch) delete dch;
 	if (mwpc) delete mwpc;
 	if (silicon) delete silicon;
@@ -1594,6 +1601,29 @@ BmnStatus BmnRawDataDecoder::PreparationTOF700() {
 	return kBMNSUCCESS;
 }
 
+void BmnRawDataDecoder::SetTof700SlewingReference(Int_t chamber, Int_t refrun, Int_t refchamber)
+{
+	if (chamber <= 0 || chamber > 60)
+	{
+		printf("Wrong slewing chamber number %d\n", chamber);
+		return;
+	}
+	if (refchamber <= 0 || refchamber > 60)
+	{
+		printf("Wrong slewing reference chamber number %d\n", refchamber);
+		return;
+	}
+	if (refrun < 0 || refrun > 9999)
+	{
+		printf("Wrong slewing reference run number %d\n", refrun);
+		return;
+	}
+	refrun_tof700_slewing[chamber-1] = refrun;
+	refchamber_tof700_slewing[chamber-1] = refchamber;
+	type_tof700_slewing[chamber-1] = 1;
+	return;
+}
+
 Int_t BmnRawDataDecoder::GetRunIdFromFile(TString name) {
 	Int_t runId = -1;
 	FILE * file = fopen(name.Data(), "rb");
@@ -1604,16 +1634,13 @@ Int_t BmnRawDataDecoder::GetRunIdFromFile(TString name) {
 	UInt_t word;
 	while (fread(&word, kWORDSIZE, 1, file)) {
 		if (word == kRUNNUMBERSYNC) {
-			printf("Grabbing run number...\n");
 			fread(&word, kWORDSIZE, 1, file); //skip word
 			fread(&runId, kWORDSIZE, 1, file);
-			printf("Run number is: %i \n",runId);
 			return runId;
 		}
 	}
 	fclose(file);
 	if (runId <= 0) {
-		printf("Couldn't read in a run number from file so parsing string\n");
 		Int_t run = 0;
 		//sscanf(&(((char *)name.Data())[strlen(name.Data())-9]), "%d", &run);
 		run = ((TString) name(name.Length() - 9, name.Length() - 5)).Atoi();
@@ -1663,7 +1690,7 @@ BmnStatus BmnRawDataDecoder::InitMaps() {
 	fNSiliconSerials = fSiliconSerials.size();
 
 	seials.clear();
-	name = TString(getenv("VMCWORKDIR")) + TString("/input/") + fCSCMapFileName;
+	name = TString(getenv("VMCWORKDIR")) + TString("/input/") + fCscMapFileName;
 	ifstream inFileCSC(name.Data());
 	if (!inFileCSC.is_open())
 		cout << "Error opening map-file (" << name << ")!" << endl;
@@ -1674,8 +1701,8 @@ BmnStatus BmnRawDataDecoder::InitMaps() {
 		if (!inFileCSC.good()) break;
 		seials.insert(ser);
 	}
-	for (auto s : seials) fCSCSerials.push_back(s);
-	fNCSCSerials = fCSCSerials.size();
+	for (auto s : seials) fCscSerials.push_back(s);
+	fNCscSerials = fCscSerials.size();
 
 	fZDCSerials.push_back(0x046f4083);
 	fZDCSerials.push_back(0x046f4bb2);

@@ -1,4 +1,5 @@
-#include "../../gconfig/basiclibs.C"
+R__ADD_INCLUDE_PATH($VMCWORKDIR)
+#include "gconfig/basiclibs.C"
 
 void bmnloadlibs()
 {
@@ -23,6 +24,7 @@ void bmnloadlibs()
   gSystem->Load("libZdc");
   gSystem->Load("libEcal");
   gSystem->Load("libBd");
+  gSystem->Load("libBmnSteering");
   gSystem->Load("libGem");
   gSystem->Load("libSilicon");
 
