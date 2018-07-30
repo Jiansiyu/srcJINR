@@ -416,6 +416,7 @@ int main(int argc, char ** argv)
 
 					// if there is only 1 strip fired, save that
 				if( stripsFired[pl].size() == 1){
+					hToF_SingleEvents[pl][stripsFired[pl].at(0)] -> Fill( tofEvents[pl][stripsFired[pl].at(0)].t );
 					tofCluster[pl].push_back(tofEvents[pl][stripsFired[pl].at(0)]);
 					//cout << "\tNumber of strips cluster: " << tofCluster[pl].size() << "\n";
 					hStripCluster[pl]->Fill( 1 );
@@ -520,7 +521,6 @@ int main(int argc, char ** argv)
 				for( int hit = 0 ; hit < tofCluster[pl].size() ; hit++){
 					if( tofCluster[pl].size() == 1){
 						int strip = tofCluster[pl].at(hit).st;
-						hToF_SingleEvents[pl][strip] -> Fill( tofCluster[pl].at(hit).t );
 					}
 					else{
 						int strip = tofCluster[pl].at(hit).st;

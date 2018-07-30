@@ -394,7 +394,7 @@ int main(int argc, char ** argv)
 	
 							// If there was already a created hit for this strip, only take the earliest one
 							// so there will only be one hit per strip allowed
-							if( tofEvents[plane][strip].hit == false || (tofEvents[plane][strip].hit == true && meanTime < tofEvents[plane][strip].t) ){
+							if( (tofEvents[plane][strip].hit == false) || (tofEvents[plane][strip].hit == true && meanTime < tofEvents[plane][strip].t) ){
 								double par0 = walkFunc[plane][strip][1];
 								double par1 = walkFunc[plane][strip][2];
 								double par2 = walkFunc[plane][strip][3];
