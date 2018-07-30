@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
-#include <algorithm>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -38,13 +37,11 @@ using namespace std;
 
 struct TOFHit{
 	double t,a,y;
-	int st;
 	bool hit;
 	TOFHit(){
 		t = 0;
 		a = 0;
 		y = 0;
-		st = -1;
 		hit = false;
 	}
 };
@@ -52,8 +49,6 @@ struct TOFHit{
 void findIdx( TClonesArray* data, int &index , double refT);
 double randomStrips();
 double fixWalk( double amp, double shift, double par0, double par1, double par2);
-double randomStripDiff();
-double randomPosDiff();
 
 int main(int argc, char ** argv)
 {
@@ -143,60 +138,12 @@ int main(int argc, char ** argv)
 		cout << "\tFailed to find time walk file, setting all corrections to 0...\n";
 	} 
 	
-	// Set up histograms:
+	// Histograms for looking at cuts
 	TString hName;
-	TH1D ** hStripMult 	= new TH1D*[20];	// number of strips fired in plane
-	TH1D ** hClusterMult	= new TH1D*[20];	// number of clusters ID'd in plane
-	TH1D ** hStripCluster	= new TH1D*[20];	// number of strips per cluster in plane
-	
-	TH1D ** hxDiff		= new TH1D*[20];
-	TH1D ** hyDiff		= new TH1D*[20];
-	TH1D ** hxDiffMC	= new TH1D*[20];
-	TH1D ** hyDiffMC	= new TH1D*[20];
-	TH1D ** htDiff		= new TH1D*[20];
-	TH2D ** hyxDiff		= new TH2D*[20];
-	TH2D ** hxtDiff		= new TH2D*[20];
-	TH2D ** hytDiff		= new TH2D*[20];
-	
-	TH1D *** hToF_SingleEvents = new TH1D**[20];
-	TH1D *** hToF_ClusteredEvents = new TH1D**[20];
-
-	for( int pl = 0 ; pl < 20 ; pl++){
-		hToF_SingleEvents[pl] = new TH1D*[48];
-		hToF_ClusteredEvents[pl] = new TH1D*[48];		
-
-		hName = Form("hStripMult_%i",pl);
-		hStripMult[pl]		= new TH1D(hName,hName,40,0,20);
-		hName = Form("hClusterMult_%i",pl);
-		hClusterMult[pl]	= new TH1D(hName,hName,40,0,20);
-		hName = Form("hStripCluster_%i",pl);
-		hStripCluster[pl]	= new TH1D(hName,hName,40,0,20);
-	
-		hName = Form("hyDiff_%i",pl);
-		hyDiff[pl]		= new TH1D(hName,hName,600,-30,30);
-		hName = Form("hyDiffMC_%i",pl);
-		hyDiffMC[pl]		= new TH1D(hName,hName,600,-30,30);
-		hName = Form("hxDiff_%i",pl);
-		hxDiff[pl]		= new TH1D(hName,hName,192,-48,0);
-		hName = Form("hxDiffMC_%i",pl);
-		hxDiffMC[pl]		= new TH1D(hName,hName,192,-48,0);
-		hName = Form("htDiff_%i",pl);
-		htDiff[pl]		= new TH1D(hName,hName,1000,-50,50);
-
-		hName = Form("hyxDiff_%i",pl);
-		hyxDiff[pl]		= new TH2D(hName,hName,600,-30,30,192,-96,96);
-		hName = Form("hytDiff_%i",pl);
-		hytDiff[pl]		= new TH2D(hName,hName,600,-30,30,1000,-50,50);
-		hName = Form("hxtDiff_%i",pl);
-		hxtDiff[pl]		= new TH2D(hName,hName,192,-96,96,1000,-50,50);
-
-		for( int st = 0 ; st < 48 ; st++){
-			hName = Form("hToF_SingleEvents_%i_%i",pl,st);
-			hToF_SingleEvents[pl][st] = new TH1D(hName,hName,4000,-15,85);
-			hName = Form("hToF_ClusteredEvents_%i_%i",pl,st);
-			hToF_ClusteredEvents[pl][st] = new TH1D(hName,hName,4000,-15,85);
-		}
-	}
+	hName = Form("hZ2Fast");
+	TH1D * hZ2	= new TH1D(hName,hName,2100,-100,2000);
+	hName = Form("hZ2All");
+	TH1D * hZ2All	= new TH1D(hName,hName,2100,-100,2000);
 
 	const int files = argc - 1;
 	for( int fi = 0 ; fi < files ; ++fi){
@@ -250,7 +197,7 @@ int main(int argc, char ** argv)
 		double BC1_CWidth= (*carbonInWidth)[0];
 		double BC2_CWidth= (*carbonInWidth)[1];
 
-
+		
 		// Set up the tree
 		TClonesArray * bc1Data 	= new TClonesArray("BmnTrigWaveDigit");
 		TClonesArray * bc2Data	= new TClonesArray("BmnTrigWaveDigit");
@@ -331,7 +278,6 @@ int main(int argc, char ** argv)
 				continue;
 
 			TOFHit tofEvents[20][48];
-			std::vector<int> stripsFired[20];
 			std::vector<double> hitInfoTime[20][48];
 			std::vector<double> hitInfoAmps[20][48];
 
@@ -380,155 +326,60 @@ int main(int argc, char ** argv)
 	
 							// If there was already a created hit for this strip, only take the earliest one
 							// so there will only be one hit per strip allowed
-							if( (tofEvents[plane][strip].hit == false) || (tofEvents[plane][strip].hit == true && meanTime < tofEvents[plane][strip].t) ){
+							if( tofEvents[plane][strip].hit == false || (tofEvents[plane][strip].hit == true && meanTime < tofEvents[plane][strip].t) ){
 								double par0 = walkFunc[plane][strip][1];
 								double par1 = walkFunc[plane][strip][2];
 								double par2 = walkFunc[plane][strip][3];
 								double shift = walkFunc[plane][strip][0];
-								
 								tofEvents[plane][strip].t = meanTime - t0Time + (-6.1 + 27./sqrt(t0Amp) ) - stripShift[plane][strip] - fixWalk(sumAmps, shift, par0, par1, par2);
+	
 								tofEvents[plane][strip].a = sumAmps;
 								tofEvents[plane][strip].y = pos;
-								tofEvents[plane][strip].hit == true;
-								tofEvents[plane][strip].st = strip;
-								
-								if( std::find( stripsFired[plane].begin() , stripsFired[plane].end() , strip) == stripsFired[plane].end())
-									stripsFired[plane].push_back( strip );
-			
+								tofEvents[plane][strip].hit = true;
 							}
 						}
 					}
 				}
 			}
+	
+			// Now for each event, I've collected at most 1 hit per strip in the ToF400. Of course not all strips fired, and not all planes fired.			
 
-			std::vector<TOFHit> tofCluster[20];
-			std::vector<int> clusterList[20][48];
-			// Now we need to cluster the ToF Events if the size in a plane is > 1
+			// Now fill histograms that I have created valid strip hits.
+			// 	Look at how many strips fired in a trigger event
+			//
+			bool doBC = false;
 			for( int pl = 0 ; pl < 20 ; pl++){
-				if( stripsFired[pl].size() == 0) continue;
-				//cout << "Number of strips fired in plane: " << stripsFired[pl].size() << "\n";
-				hStripMult[pl]->Fill( stripsFired[pl].size() );				
-
-				std::sort( stripsFired[pl].begin() , stripsFired[pl].end() );
-				//cout << "Need to consider clustering for # strips: " << stripsFired[pl].size() << "\n\tstrips: ";
-				//for( int i = 0 ; i < stripsFired[pl].size() ; i++) cout << stripsFired[pl].at(i) << " ";
-				//cout << "\n";
-
-					// if there is only 1 strip fired, save that
-				if( stripsFired[pl].size() == 1){
-					tofCluster[pl].push_back(tofEvents[pl][stripsFired[pl].at(0)]);
-					//cout << "\tNumber of strips cluster: " << tofCluster[pl].size() << "\n";
-					hStripCluster[pl]->Fill( 1 );
-					//cout << "\tcluster size: " << tofCluster[pl].size() << "\n";
-					continue;
-				}
-
-					// if there is more than 1 strip fired, cluster them
-				for( int i = 0 ; i < stripsFired[pl].size() ; i++){
-					clusterList[pl][stripsFired[pl].at(i) ].push_back( stripsFired[pl].at(i) );
-					for( int j = 0 ; j < stripsFired[pl].size() ; j++){
-						if( j <= i ) continue;
-						int stOne = stripsFired[pl].at(i);
-						int stTwo = stripsFired[pl].at(j);
-
-						TOFHit one = tofEvents[pl][stOne];
-						TOFHit two = tofEvents[pl][stTwo];
-						
-						// if delta T > 2ns between two strips, they are separate hits
-						// if hits are 4 strips apart, they are separate hits
-						// if hits are more than 10cm away in y, they are separate hits
-						hxDiff[pl]->Fill( one.st - two.st);
-						hxDiffMC[pl]->Fill( -randomStripDiff() );
-						hyDiff[pl]->Fill( one.y - two.y);
-						hyDiffMC[pl]->Fill( randomPosDiff() );
-						htDiff[pl]->Fill( one.t - two.t);
-						hyxDiff[pl]->Fill( one.y - two.y , one.st - two.st );
-						hxtDiff[pl]->Fill( one.st - two.st , one.t - two.t );
-						hytDiff[pl]->Fill( one.y - two.y , one.t - two.t );
-
-						if( (fabs( one.t - two.t ) > 2) || (fabs( one.y - two.y ) > 5) || (fabs( one.st - two.st ) > 10) ){
-						}
-						else{
-							clusterList[pl][one.st].push_back( two.st );
-						}
-					}
-					//cout << "\tcluster list of strip: " << stripsFired[pl].at(i) << "\n\t\t";
-					//for( int j = 0 ; j < clusterList[pl][stripsFired[pl].at(i) ].size() ; j++)
-					//	cout << clusterList[pl][stripsFired[pl].at(i) ].at(j) << " ";
-					//cout << "\n";
-				}
-				
-				std::vector< std::vector<int> > result;
-					// For all strips, take the cluster list
+				int cnt = 0;
+				std::vector<int> fired;
 				for( int st = 0 ; st < 48 ; st++){
-					//cout << "Working on plane, strip " << pl << " " << st << "\n";
-						// For all the groups I already have, find out if any intersection with this cluster list, and if so, add it to group
-					bool insert = true;
-					//cout << "number of current clusters size: " << result.size() << "\n";
-					for( int group = 0 ; group < result.size() ; group++){
-						std::vector<int> tmp;
-						std::vector<int> newGrp;
-						std::set_intersection( clusterList[pl][st].begin() , clusterList[pl][st].end(), \
-									result.at(group).begin() , result.at(group).end() , back_inserter(tmp) ) ;
-						//cout << "intersection of how many elements?: " << tmp.size() << "\n";
-						if( tmp.size() ){
-							// Union two sets into the group and exit
-							std::set_union( clusterList[pl][st].begin() , clusterList[pl][st].end(), \
-									result.at(group).begin() , result.at(group).end() , back_inserter( newGrp ) );
-							insert = false;
-							result.at(group).swap(newGrp);
+					if( tofEvents[pl][st].hit == true){
+						if( tofEvents[pl][st].t > 1 && tofEvents[pl][st].t < 3 ){ // rough cut on where our protons should be
+							doBC = true;
 							break;
 						}
 					}
-						// Create new group if no group wiht an intersection
-					if( insert ){
-						if( clusterList[pl][st].size() > 0)
-							result.push_back(  clusterList[pl][st] );
-					}
-
-				}
-				
-				for( int group = 0 ; group < result.size() ; group++){
-				}
-				
-				//cout << "\tnumber of clusters: " << result.size() << "\n";
-				hClusterMult[pl]->Fill( result.size() );
-				int TEST = 0;
-				for( int group = 0 ; group < result.size() ; group++){
-					//cout << "\t\tcluster " << group << ": ";
-					hStripCluster[pl]->Fill( result.at(group).size() );
-					//cout << "\tNumber of strips in cluster: " << result.at(group).size() << "\n";
-					TOFHit selectStrip;
-					//for( int hit = 0 ; hit < result.at(group).size() ; hit++){
-						//cout << result.at(group).at(hit) << " ";
-					//}
-					//cout << "\n\t\twith parameters:\n";
-					for( int hit = 0 ; hit < result.at(group).size() ; hit++){
-						int strip = result.at(group).at(hit);
-						//cout << "\t\t\t\t" << tofEvents[pl][strip].a << " " << tofEvents[pl][strip].t << " " << tofEvents[pl][strip].y << " " << tofEvents[pl][strip].st << "\n";
-	
-						if( tofEvents[pl][strip].a > selectStrip.a )
-							selectStrip = tofEvents[pl][strip];
-					}
-					tofCluster[pl].push_back( selectStrip );
-					//cout << "\n";
-				}
-		
-				// Now we have all tof400 hits properly clustered for each plane so we can look at these hits.
-				// We can have multiple hits for a given plane, and multiple planes firing, and we can look at all of these
-				// hits and fill the ToF spectrum
-				for( int hit = 0 ; hit < tofCluster[pl].size() ; hit++){
-					if( tofCluster[pl].size() == 1){
-						int strip = tofCluster[pl].at(hit).st;
-						hToF_SingleEvents[pl][strip] -> Fill( tofCluster[pl].at(hit).t );
-					}
-					else{
-						int strip = tofCluster[pl].at(hit).st;
-						hToF_ClusteredEvents[pl][strip] -> Fill( tofCluster[pl].at(hit).t );
-					}
+					if( doBC ) break;
 				}
 			}
-			
+			if( bc3Data->GetEntriesFast() &&  bc4Data->GetEntriesFast() ){
+				int bc3Idx;
+				findIdx(bc3Data,bc3Idx,t0Time);
+				BmnTrigWaveDigit * signal1 = (BmnTrigWaveDigit *) bc3Data->At(bc3Idx);
+				adcBC3 = signal1->GetPeak() - pedBC3;
+				
+				int bc4Idx;
+				findIdx(bc4Data,bc4Idx,t0Time);
+				BmnTrigWaveDigit * signal2 = (BmnTrigWaveDigit *) bc4Data->At(bc4Idx);
+				adcBC4 = signal2->GetPeak() - pedBC4;
+
+				
+				hZ2All->Fill( sqrt( adcBC3 * adcBC4 ) );
+				if( doBC )
+					hZ2->Fill( sqrt( adcBC3 * adcBC4 ) );
+				
+			}
+				
+						
 
 		} // End of loop over events in file
 
@@ -537,25 +388,10 @@ int main(int argc, char ** argv)
 	
 	TFile * outFile = new TFile("tofevents.root","RECREATE");
 	outFile->cd();
-	for( int pl = 0 ; pl < 20 ; pl++){
-		hStripMult[pl]->Write();	
-		hClusterMult[pl]->Write();	
-		hStripCluster[pl]->Write();	
-		
-		hxDiff[pl]->Write();
-		hyDiff[pl]->Write();
-		hxDiffMC[pl]->Write();
-		hyDiffMC[pl]->Write();
-		htDiff[pl]->Write();
-		hyxDiff[pl]->Write();
-		hxtDiff[pl]->Write();
-		hytDiff[pl]->Write();
-
-		for( int st = 0 ; st < 48 ; st++){
-			hToF_SingleEvents[pl][st]->Write();
-			hToF_ClusteredEvents[pl][st]->Write();
-		}
-	}
+	
+	hZ2->Write();
+	hZ2All->Write();
+	
 	outFile->Write();
 	outFile->Close();
 
@@ -581,33 +417,5 @@ double fixWalk( double amp, double shift, double par0, double par1, double par2)
 		return 0;
 	
 	return par0 + par1*exp( -(amp - shift) / par2 );
-}
-
-double randomStripDiff(){
-	TRandom3 * rand = new TRandom3(0);
-	double dist = 0.;
-	while( dist == 0.){
-		int st1 = rand->Rndm() * 47;
-		int st2 = rand->Rndm() * st1; // lower range possible
-		int st3 = rand->Rndm() * (47-st1) + st1; // upper range possible
-		double choice = rand->Rndm(); // choice between the two
-		int st4;
-		if( choice < 0.5) st4 = st2;
-		else	st4 = st3;
-
-		if( st1 > st4) dist = (st1 - st4);
-		else	dist = (st4 - st1);
-	}
-	delete rand;
-	
-	return dist;
-}
-
-double randomPosDiff(){
-	TRandom3 * rand = new TRandom3(0);
-	double dist = (rand->Rndm() * 30. - 15.) - (rand->Rndm() * 30. - 15.);
-
-	delete rand;
-	return dist;
 }
 
