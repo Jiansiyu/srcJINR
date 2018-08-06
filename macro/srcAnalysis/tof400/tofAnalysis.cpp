@@ -64,8 +64,10 @@ int main(int argc, char ** argv)
 			<< "\tcalcPedestals /path/to/all/digi/files\n";
 		return -1;
 	}
+
 	// Init BmnTOF1Detector
 	BmnTOF1Detector * Plane[20];
+	stripCenters[20][48];
 	TString name;
 	for (Int_t i = 0; i < 20; i++) {
 		name = Form("Plane%d", i);
@@ -511,12 +513,6 @@ int main(int argc, char ** argv)
 						TOFHit selectStrip;
 						//for( int hit = 0 ; hit < result.at(group).size() ; hit++){
 						//cout << result.at(group).at(hit) << " ";
-						//}
-						//cout << "\n\t\twith parameters:\n";
-						for( int hit = 0 ; hit < result.at(group).size() ; hit++){
-							int strip = result.at(group).at(hit);
-							//cout << "\t\t\t\t" << tofEvents[pl][strip].a << " " << tofEvents[pl][strip].t << " " << tofEvents[pl][strip].y << " " << tofEvents[pl][strip].st << "\n";
-
 							if( tofEvents[pl][strip].a > selectStrip.a )
 								selectStrip = tofEvents[pl][strip];
 						}
