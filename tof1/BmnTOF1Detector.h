@@ -70,7 +70,10 @@ private:
     BmnTrigDigit *fT0;
 
     TList *fHistListStat;
-    
+    TList *fHistListdt;
+
+    TH2I *hdT_vs_WidthDet[fNStr + 1], *hdT_vs_WidthT0[fNStr + 1];
+    TH1I * hdT[fNStr + 1];
     TH1I *hHitByCh, *hHitPerEv;
     TH2I *hHitLR, *hXY;
     TH1S *hDy_near, *hDtime_near, *hDWidth_near;
@@ -78,14 +81,12 @@ private:
     TH2S *hTempDtimeDy_near, *hTempDtimeDy_acros;
 
     TGraphErrors *gSlew[fNStr];
-    
-    TTree *fTree4Save;
-    TClonesArray *fArrayConteiner;
-            
+
     void FillHist();
     Double_t CalculateDt(Int_t Str);
     Bool_t GetCrossPoint(Int_t NStrip);
     void AddHit(Int_t Str, TClonesArray *TofHit);
+    void AddConteiner(Int_t Str, TClonesArray *TofHit);
 
 
 public:
@@ -106,16 +107,19 @@ public:
     Bool_t SetCorrLR(Double_t *Mass);
     Bool_t SetCorrLR(TString NameFile);
     Bool_t SetCorrSlewing(TString NameFile);
-    Bool_t SetCorrTimeShift (TString NameFile); //FIXME
+    Bool_t SetCorrTimeShift(TString NameFile); //FIXME
     Bool_t SetGeoFile(TString NameFile);
     Bool_t SetGeo(BmnTof1GeoUtils *pGeoUtils);
     Bool_t GetXYZTime(Int_t Str, TVector3 *XYZ, Double_t *ToF);
     Double_t GetWidth(Int_t Str);
+    Double_t GetTime(Int_t Str);
     Bool_t SaveHistToFile(TString NameFile);
-    Bool_t SetTree (TTree *tree);
-    Int_t GetFillHistLevel () {return fFillHist;};
-    
-    ClassDef(BmnTOF1Detector, 3);
+
+    Int_t GetFillHistLevel() {
+        return fFillHist;
+    };
+
+    ClassDef(BmnTOF1Detector, 4);
 
 };
 

@@ -477,7 +477,7 @@ Bool_t BmnTOF1Detector::GetCrossPoint(Int_t NStrip = 0) {
 Bool_t BmnTOF1Detector::SetGeoFile(TString NameFile) {
 
     // get gGeoManager from ROOT file 
-    TString PathToFile = Form("%s%s%s", getenv("VMCWORKDIR"), "/macro/run/geometry_run/", NameFile.Data());
+    TString PathToFile = Form("%s%s%s", getenv("VMCWORKDIR"), "/macro/run/", NameFile.Data());
     TFile* geoFile = new TFile(PathToFile, "READ");
     if (!geoFile->IsOpen()) {
         cout << "Error: could not open ROOT file with geometry: " + NameFile << endl;
@@ -507,7 +507,7 @@ Bool_t BmnTOF1Detector::SetGeoFile(TString NameFile) {
         //        else fCentrStrip[i].SetX(fCentrStrip[i].X() + 2.5);
     }
     geoFile->Close();
-    pGeoUtils->~BmnTof1GeoUtils();
+    pGeoUtils->~BmnTof1GeoUtils(); // deconstruct 
     return kTRUE;
 }
 

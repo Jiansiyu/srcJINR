@@ -141,9 +141,12 @@ int main(int argc, char ** argv)
 	// Histograms for looking at cuts
 	TString hName;
 	hName = Form("hZ2Fast");
-	TH1D * hZ2	= new TH1D(hName,hName,2100,-100,2000);
+	TH1D * hZ2	= new TH1D(hName,hName,1000,0,50);
 	hName = Form("hZ2All");
-	TH1D * hZ2All	= new TH1D(hName,hName,2100,-100,2000);
+	TH1D * hZ2All	= new TH1D(hName,hName,1000,0,50);
+
+	int cntr = 0;
+	int highp = 0;
 
 	const int files = argc - 1;
 	for( int fi = 0 ; fi < files ; ++fi){
@@ -234,8 +237,8 @@ int main(int argc, char ** argv)
 
 		// Loop over events
 		for (int event=0 ; event<nEvents ; event++){
-
-
+			cntr++;
+		
 			double adcBC1 = 0;
 			double adcBC2 = 0;
 			double adcBC3 = 0;
@@ -353,8 +356,9 @@ int main(int argc, char ** argv)
 				std::vector<int> fired;
 				for( int st = 0 ; st < 48 ; st++){
 					if( tofEvents[pl][st].hit == true){
-						if( tofEvents[pl][st].t > 1 && tofEvents[pl][st].t < 3 ){ // rough cut on where our protons should be
+						if( tofEvents[pl][st].t > 0.5 && tofEvents[pl][st].t < 2 ){ // rough cut on where our protons should be
 							doBC = true;
+							highp++;
 							break;
 						}
 					}
@@ -373,9 +377,9 @@ int main(int argc, char ** argv)
 				adcBC4 = signal2->GetPeak() - pedBC4;
 
 				
-				hZ2All->Fill( sqrt( adcBC3 * adcBC4 ) );
+				hZ2All->Fill( sqrt( adcBC3 * adcBC4 ) * 36./725.);
 				if( doBC )
-					hZ2->Fill( sqrt( adcBC3 * adcBC4 ) );
+					hZ2->Fill( sqrt( adcBC3 * adcBC4 ) * 36/725.);
 				
 			}
 				
@@ -385,7 +389,8 @@ int main(int argc, char ** argv)
 
 	} // End of loop over files	
 	
-	
+	cout << cntr << " " << highp << "\n";
+
 	TFile * outFile = new TFile("tofevents.root","RECREATE");
 	outFile->cd();
 	
