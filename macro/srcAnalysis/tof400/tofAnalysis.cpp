@@ -67,7 +67,6 @@ int main(int argc, char ** argv)
 
 	// Init BmnTOF1Detector
 	BmnTOF1Detector * Plane[20];
-	stripCenters[20][48];
 	TString name;
 	for (Int_t i = 0; i < 20; i++) {
 		name = Form("Plane%d", i);
