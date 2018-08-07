@@ -1,14 +1,15 @@
-#include "BmnMwpcTrack.h"
+#include "BmnMwpcTrackToDC.h"
 
 // -----   Default constructor   -------------------------------------------
 
-BmnMwpcTrack::BmnMwpcTrack()
-  : BmnTrack(){
+BmnMwpcTrackToDC::BmnMwpcTrackToDC()
+: BmnTrack() {
+
 }
 
 // -----   Destructor   ----------------------------------------------------
 
-BmnMwpcTrack::~BmnMwpcTrack() {
+BmnMwpcTrackToDC::~BmnMwpcTrackToDC() {
 }
 
-ClassImp(BmnMwpcTrack)
+ClassImp(BmnMwpcTrackToDC)
