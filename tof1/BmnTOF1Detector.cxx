@@ -46,94 +46,8 @@ void BmnTOF1Detector::Clear() {
 
 //----------------------------------------------------------------------------------------
 
-Bool_t BmnTOF1Detector::SetDigit(BmnTof1Digit * TofDigit) {
-	fStrip = TofDigit->GetStrip();
-	if (fStrip < 0 || fStrip > fNStr) return kFALSE;
-	//cout << " Plane = " << TofDigit->GetPlane() << "; Strip " << TofDigit->GetStrip() << "; Side " << TofDigit->GetSide() << "; Time " << TofDigit->GetTime() << "; Amp " << TofDigit->GetAmplitude() << endl;
-	if (TofDigit->GetSide() == 0 && fFlagHit[fStrip] == kFALSE && fKilled[fStrip] == kFALSE) {
-		fTimeLtemp[fStrip] = TofDigit->GetTime() - 2. * fCorrLR[fStrip];
-		//cout << "Setting Shift: strip # " << fStrip << " shift val " << CorrLR[fStrip] << " curr timeL " << TofDigit->GetTime() << " shifted timeL " << fTimeLtemp[fStrip] <<  "\n";
-		fWidthLtemp[fStrip] = TofDigit->GetAmplitude();
-		fDigitL[fStrip]++;
-	}
-	if (TofDigit->GetSide() == 1 && fFlagHit[fStrip] == kFALSE && fKilled[fStrip] == kFALSE) {
-		fTimeRtemp[fStrip] = TofDigit->GetTime();
-		//cout << "Setting Shift: strip # " << fStrip << " shift val " << CorrLR[fStrip] << " curr timeR " << TofDigit->GetTime() << " shifted timeR " << fTimeRtemp[fStrip] <<  "\n";
-		fWidthRtemp[fStrip] = TofDigit->GetAmplitude();
-		fDigitR[fStrip]++;
-	}
-	if (
-			fTimeRtemp[fStrip] != 0 && fTimeLtemp[fStrip] != 0
-			&& TMath::Abs((fTimeLtemp[fStrip] - fTimeRtemp[fStrip]) * 0.5) <= fMaxDelta // cat for length of strip  
-			//        && TMath::Abs((fWidthLtemp[fStrip] - fWidthRtemp[fStrip]) * 0.5) <= 1.5 // cat for Amplitude correlation
-			//&& fFlagHit[fStrip] == kFALSE
-	   )
-		if (fFlagHit[fStrip] == kFALSE) {
-			//cout << "Before set variable: " << fTimeL[fStrip] << " " << fTimeR[fStrip] << "\n";
-			fTimeL[fStrip] = fTimeLtemp[fStrip];
-			fTimeR[fStrip] = fTimeRtemp[fStrip];
-			fWidthL[fStrip] = fWidthLtemp[fStrip];
-			fWidthR[fStrip] = fWidthRtemp[fStrip];
-			fFlagHit[fStrip] = kTRUE;
-			fHit[fStrip]++;
-			//cout << "After set variable: " << fTimeL[fStrip] << " " << fTimeR[fStrip] << "\n";
-		} else
-			fHit[fStrip]++;
-
-	return fFlagHit[fStrip];
-}
-
-//----------------------------------------------------------------------------------------
-
 void BmnTOF1Detector::KillStrip(Int_t NumberOfStrip) {
 	fKilled[NumberOfStrip] = kTRUE;
-}
-
-//----------------------------------------------------------------------------------------
-
-Int_t BmnTOF1Detector::FindHits(BmnTrigDigit *T0) {
-	fT0 = T0;
-	Bool_t flag;
-	for (Int_t i = 0; i < fNStr; i++)
-		if (
-				fWidthL[i] != 0 && fWidthR[i] != 0
-				//&& fFlagHit[fStrip] == kTRUE
-		   ) {
-			fHit_Per_Ev++;
-			fWidth[i] = (fWidthL[i] + fWidthR[i]);
-			fTime[i] = (fTimeL[i] + fTimeR[i]) * 0.5;
-			flag = GetCrossPoint(i);
-			if (fT0 == NULL) continue;
-			if (fT0 != NULL) fTof[i] = CalculateDt(i);
-			if (fFillHist > 0) {
-				hdT_vs_WidthDet[i] -> Fill(fWidth[i], fTof[i]);
-				hdT_vs_WidthDet[i] -> Fill(fT0->GetAmp(), fTof[i]);
-				hdT[i] -> Fill(fTof[i]);
-				hdT_vs_WidthDet[fNStr] -> Fill(fWidth[i], fTof[i]);
-				hdT_vs_WidthDet[fNStr] -> Fill(fT0->GetAmp(), fTof[i]);
-				hdT[fNStr] -> Fill(fTof[i]);
-				if (i > 3) {
-
-					if (fFlagHit[i - 1] == kTRUE) {
-						hDy_near->Fill(fCrossPoint[i].Y() - fCrossPoint[i - 1].Y());
-						hDtime_near->Fill(fTof[i] - fTof[i - 1]);
-						hTempDtimeDy_near->Fill(fTof[i] - fTof[i - 1], fCrossPoint[i].Y() - fCrossPoint[i - 1].Y());
-						hDWidth_near->Fill(fWidth[i] - fWidth[i - 1]);
-					}
-					if (fFlagHit[i - 2] == kTRUE) {
-						hDy_acros->Fill(fCrossPoint[i].Y() - fCrossPoint[i - 2].Y());
-						hDtime_acros->Fill(fTof[i] - fTof[i - 2]);
-						hTempDtimeDy_acros->Fill(fTof[i] - fTof[i - 2], fCrossPoint[i].Y() - fCrossPoint[i - 2].Y());
-						hDWidth_acros->Fill(fWidth[i] - fWidth[i - 2]);
-					}
-				}
-			}
-		}
-
-	if (fFillHist > 0)
-		FillHist();
-
-	return fHit_Per_Ev;
 }
 
 //----------------------------------------------------------------------------------------
@@ -152,28 +66,7 @@ Int_t BmnTOF1Detector::FindHits(BmnTrigDigit *T0, TClonesArray *TofHit) {
 			flag = GetCrossPoint(i);
 			if (fT0 == NULL) continue;
 			if (fT0 != NULL) fTof[i] = CalculateDt(i);
-			if (fFillHist > 0) {
-				hdT_vs_WidthDet[i] -> Fill(fWidth[i], fTof[i]);
-				hdT_vs_WidthT0[i] -> Fill(fT0->GetAmp(), fTof[i]);
-				hdT[i] -> Fill(fTof[i]);
-				hdT_vs_WidthDet[fNStr] -> Fill(fWidth[i], fTof[i]);
-				hdT_vs_WidthT0[fNStr] -> Fill(fT0->GetAmp(), fTof[i]);
-				hdT[fNStr] -> Fill(fTof[i]);
-				if (i > 3) {
-					if (fFlagHit[i - 1] == kTRUE) {
-						hDy_near->Fill(fCrossPoint[i].Y() - fCrossPoint[i - 1].Y());
-						hDtime_near->Fill(fTof[i] - fTof[i - 1]);
-						hDWidth_near->Fill(fWidth[i] - fWidth[i - 1]);
-						hTempDtimeDy_near->Fill(fTof[i] - fTof[i - 1], fCrossPoint[i].Y() - fCrossPoint[i - 1].Y());
-					}
-					if (fFlagHit[i - 2] == kTRUE) {
-						hDy_acros->Fill(fCrossPoint[i].Y() - fCrossPoint[i - 2].Y());
-						hDtime_acros->Fill(fTof[i] - fTof[i - 2]);
-						hDWidth_acros->Fill(fWidth[i] - fWidth[i - 2]);
-						hTempDtimeDy_acros->Fill(fTof[i] - fTof[i - 2], fCrossPoint[i].Y() - fCrossPoint[i - 2].Y());
-					}
-				}
-			}
+			
 			TString Name = TofHit->GetClass()->GetName();
 			if (Name == "BmnTofHit"){
 				//            cout << " Fill BmnTofHit" << endl;
@@ -184,9 +77,6 @@ Int_t BmnTOF1Detector::FindHits(BmnTrigDigit *T0, TClonesArray *TofHit) {
 				AddConteiner(i, TofHit);
 			}
 		}
-
-	if (fFillHist > 0)
-		FillHist();
 
 	return fHit_Per_Ev;
 }

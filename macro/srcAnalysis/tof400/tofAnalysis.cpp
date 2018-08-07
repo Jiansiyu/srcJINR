@@ -138,6 +138,9 @@ int main(int argc, char ** argv)
 	int tmp_Pl, tmp_St, tmp_Pt;
 	double tmp_Sh, tmp_p0, tmp_p1, tmp_p2, tmp_p0e, tmp_p1e, tmp_p2e;
 	double walkFunc[20][48][4] = {0.};
+	double walkFunc[20][48][4] = {0.};
+	double tmp_Sh, tmp_p0, tmp_p1, tmp_p2, tmp_p0e, tmp_p1e, tmp_p2e;
+	double walkFunc[20][48][4] = {0.};
 	if (f_corr_walk.is_open() == true){
 		while (!f_corr_walk.eof()) {
 			f_corr_walk >> tmp_Pl >> tmp_St >> tmp_Pt \
@@ -513,6 +516,9 @@ int main(int argc, char ** argv)
 						TOFHit selectStrip;
 						//for( int hit = 0 ; hit < result.at(group).size() ; hit++){
 						//cout << result.at(group).at(hit) << " ";
+							if( tofEvents[pl][strip].a > selectStrip.a )
+								selectStrip = tofEvents[pl][strip];
+						}
 							if( tofEvents[pl][strip].a > selectStrip.a )
 								selectStrip = tofEvents[pl][strip];
 						}
