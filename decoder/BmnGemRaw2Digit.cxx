@@ -45,7 +45,6 @@ BmnGemRaw2Digit::BmnGemRaw2Digit(Int_t period, Int_t run, vector<UInt_t> vSer, T
     UInt_t hot = 0;
     //    TString name = TString(getenv("VMCWORKDIR")) + TString("/input/") + TString(Form("GEM_map_run%d_SRC.txt", period));
     TString name = TString(getenv("VMCWORKDIR")) + TString("/input/") + mapFileName;
-    printf("%s\n", name.Data());
     ifstream inFile(name.Data());
     if (!inFile.is_open())
         cout << "Error opening map-file (" << name << ")!" << endl;

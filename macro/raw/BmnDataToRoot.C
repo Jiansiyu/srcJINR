@@ -31,16 +31,14 @@ void BmnDataToRoot(TString file, Long_t nEvents = 0, Bool_t doConvert = kTRUE)
 	decoder->SetDetectorSetup(setup);
 
 	TString PeriodSetupExt = Form("%d%s.txt", period, ((stp == kBMNSETUP) ? "" : ""));
-
 	decoder	->	SetTrigPlaceMap	(TString("Trig_PlaceMap_Run7_SRC.txt"	));
 	decoder	->	SetTrigDetMap	(TString("Trig_map_Run7_SRC.txt"	));
 	decoder	->	SetTrigINLTQDC1	(TString("TQDC16VS-046F-0C75-TDC.ini"	));	// For TQDC at negative polarity
 	decoder	->	SetTrigINLTQDC2	(TString("TQDC16VS-076D-3C3C-TDC.ini"	));	// For TQDC at positive polarity
 	decoder	->	SetTrigINLTDC1	(TString("TDC72VHL-076D-16A8.ini"	));	// For TDC72
 	decoder	->	SetTrigINLTDC2	(TString("TDC32VL_FFD.dat"		));	// For TDC32
-
 	decoder->SetSiliconMapping("SILICON_map_run7.txt");
-	decoder->SetGemMapping(TString("GEM_map_run") + PeriodSetupExt);
+	decoder->SetGemMapping(TString("GEM_map_run7_SRC.txt"));
 	decoder->SetCSCMapping(TString("CSC_map_period") + PeriodSetupExt);
 	// in case comment out the line decoder->SetTof400Mapping("...")  
 	// the maps of TOF400 will be read from DB (only for JINR network)
@@ -50,7 +48,7 @@ void BmnDataToRoot(TString file, Long_t nEvents = 0, Bool_t doConvert = kTRUE)
 	decoder->SetZDCCalibration("zdc_muon_calibration.txt");
 	decoder->SetECALMapping("ECAL_map_period_7.txt");
 	decoder->SetECALCalibration("");
-	decoder->SetMwpcMapping(TString("MWPC_map_period") + PeriodSetupExt);
+	decoder->SetMwpcMapping(TString("MWPC_map_period7_SRC.txt"));
 	decoder->SetLANDMapping("land_mapping_jinr_triplex.txt");
 	decoder->SetLANDPedestal("r0030_land_clock.hh");
 	decoder->SetLANDTCal("r0030_land_tcal.hh");

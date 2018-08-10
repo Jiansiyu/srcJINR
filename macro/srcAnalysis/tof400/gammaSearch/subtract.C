@@ -6,35 +6,35 @@ void subtract(TString file1 , TString file2, int plane){
 
 	
 	TString hName;
-	hName = Form("hToF_All_%i_0",plane);
-	TH1D * wall = (TH1D* ) wall_Fi->Get(hName);
+	hName = Form("hToF_ClusteredEvents_%i_0",plane);
+	TH1D * wall = (TH1D* ) wall_Fi->Get(hName);	// wall = clustered events with Pb-wall
 	TH1D * nowall = (TH1D* ) nowa_Fi->Get(hName);
 
-	hName = Form("hToF_Singles_%i_0",plane);
+	hName = Form("hToF_SingleEvents_%i_0",plane);
 	TH1D * wall2 = (TH1D* ) wall_Fi->Get(hName);
 	TH1D * nowall2 = (TH1D* ) nowa_Fi->Get(hName);
 	
-	wall->Add(wall2,-1);
-	nowall->Add(nowall2,-1);
+	//wall->Add(wall2,-1);
+	//nowall->Add(nowall2,-1);
 
 	for( int st = 1 ; st < 48 ; st++){
 	
-		hName = Form("hToF_Singles_%i_%i",plane,st);
+		hName = Form("hToF_SingleEvents_%i_%i",plane,st);
 		TH1D * data_wa1 = (TH1D *)wall_Fi->Get(hName);
-		hName = Form("hToF_All_%i_%i",plane,st);
+		hName = Form("hToF_ClusteredEvents_%i_%i",plane,st);
 		TH1D * data_wa2 = (TH1D *)wall_Fi->Get(hName);
 		
-		data_wa2->Add(data_wa1,-1);		
+		//data_wa2->Add(data_wa1,-1);		
 		wall->Add(data_wa2,1);
 		wall2->Add(data_wa1,1);
 
-		hName = Form("hToF_Singles_%i_%i",plane,st);
+		hName = Form("hToF_SingleEvents_%i_%i",plane,st);
 		TH1D * data_n1 = (TH1D *)nowa_Fi->Get(hName);
 		
-		hName = Form("hToF_All_%i_%i",plane,st);
+		hName = Form("hToF_ClusteredEvents_%i_%i",plane,st);
 		TH1D * data_n2 = (TH1D *)nowa_Fi->Get(hName);
 	
-		data_n2->Add(data_n1,-1);
+		//data_n2->Add(data_n1,-1);
 		nowall->Add(data_n2,1);
 		nowall2->Add(data_n1,1);
 
@@ -48,10 +48,12 @@ void subtract(TString file1 , TString file2, int plane){
 	//nowall2->SetStats(0);
 	wall->GetXaxis()->SetRangeUser(-2,8);
 	wall->SetTitle("");
-	//wall->Draw();				// multi hits wall = blue
+	wall->Draw();				// multi hits wall = blue
 	wall2->SetLineColor(2);			// single hits wall = red
-	//wall2->Draw("hist,same");
+	wall2->Draw("hist,same");
+	
 						// multi hits no wall = green
+	/*
 	nowall->Scale( wall->GetEntries() / nowall->GetEntries() );
 	nowall->SetLineColor(8);
 	//nowall->Draw("hist,same");
@@ -65,12 +67,14 @@ void subtract(TString file1 , TString file2, int plane){
 	wall->Add(nowall,-1);
 	wall2->Add(nowall2,-1);
 	//wall->Add(wall2,-1);
-	//wall->Draw("hist");
-	//wall2->Draw("same,hist");
+	wall->Rebin(2);
+	wall2->Rebin(2);
+	wall->Draw("hist");
+	wall2->Draw("same,hist");
 	
 	wall->Add(wall2,-1);
 	wall->Rebin(2);
-	wall->Draw("hist");
+	//wall->Draw("hist");
 	
 	TF1 * testFit = new TF1("testFit","gaus",-1.5,1.5);
 	testFit->SetParameter(0,wall->GetMaximum() );
@@ -80,13 +84,15 @@ void subtract(TString file1 , TString file2, int plane){
 	double par[3];
 	testFit->GetParameters(&par[0]);
 	testFit->SetParameters(par);
-	testFit->Draw("same");
+	//testFit->Draw("same");
 
 	cout << sqrt( pow( par[2] - fabs(par[1]) , 2) - pow( 0.120 , 2) )*1000 << "\n";
 	
 	//wall->Draw("hist");
 	//nowall->Draw("hist,same");
 	wall->GetXaxis()->SetRangeUser(-2,8);
+	
+	*/
 	c->Update();
 
 }
