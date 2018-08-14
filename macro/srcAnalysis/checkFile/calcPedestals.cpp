@@ -3,6 +3,8 @@
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
+#include <fstream>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -11,6 +13,14 @@
 #include "TFitResult.h"
 #include "TFitResultPtr.h"
 #include "TVectorT.h"
+#include "TH2D.h"
+#include "TF1.h"
+#include "TApplication.h"
+#include "TCanvas.h"
+#include "TGraph.h"
+#include "TGraphErrors.h"
+#include "TStyle.h"
+#include "Rtypes.h"
 
 #include "BmnTrigWaveDigit.h"
 #include "BmnTrigDigit.h"
@@ -79,7 +89,14 @@ int main(int argc, char ** argv)
 	TH1D * BC3_tdiff_ped = new TH1D("BC3_tdiff_ped","BC3_tdiff_ped",20000,-1000,1000);
 	TH1D * BC4_tdiff_ped = new TH1D("BC4_tdiff_ped","BC4_tdiff_ped",20000,-1000,1000);
 
-	TH1D * bc1bc2	= new TH1D("CarbonIn","CarbonIn",700,0,70);
+	TH1D * bc1bc2	= new TH1D("CarbonIn","CarbonIn",1000,0,100);
+	TH1D * bc3bc4	= new TH1D("CarbonOut","CarbonOut",1000,0,100);
+	double a = 0.020542;
+	double b = 0.0305108;
+	double c = 0.0000114953;
+	double a2 = 0.00173144;
+	double b2 = 0.0384856;
+	double c2 = 0.000015362;
 
 	// Set up the tree
 	TClonesArray * bc1Data 	= new TClonesArray("BmnTrigWaveDigit");
@@ -175,6 +192,32 @@ int main(int argc, char ** argv)
 			fillPedestal( BC4_ped , BC4_sig ,  BC4_offHist ,BC4_tdiff_ped , BC4_tdiff_sig , bc4Data , bc4Idx , t0Time);
 
 		}
+		
+		if( bc1Data->GetEntriesFast() && bc2Data->GetEntriesFast()){
+			int bc1Idx;
+			findIdx(bc1Data,bc1Idx,t0Time);
+			int bc2Idx;
+			findIdx(bc2Data,bc2Idx,t0Time);
+			
+			BmnTrigWaveDigit * signalBC1 = (BmnTrigWaveDigit*) bc1Data->At(bc1Idx);
+			BmnTrigWaveDigit * signalBC2 = (BmnTrigWaveDigit*) bc2Data->At(bc2Idx);
+
+			double x = sqrt( (signalBC1->GetPeak() - pedBC1)*(signalBC2->GetPeak() - pedBC2) );
+			bc1bc2->Fill( a + b*x + c*x*x );
+		}
+		if( bc3Data->GetEntriesFast() && bc4Data->GetEntriesFast() ){
+			int bc3Idx;
+			findIdx(bc3Data,bc3Idx,t0Time);
+			int bc4Idx;
+			findIdx(bc4Data,bc4Idx,t0Time);
+
+			BmnTrigWaveDigit * signalBC3 = (BmnTrigWaveDigit*) bc3Data->At(bc3Idx);
+			BmnTrigWaveDigit * signalBC4 = (BmnTrigWaveDigit*) bc4Data->At(bc4Idx);
+
+			double x2 = sqrt( (signalBC3->GetPeak() - pedBC3)*(signalBC4->GetPeak() - pedBC4) );
+			bc3bc4->Fill( a2 + b2*x2 + c2*x2*x2 );	
+		}
+		
 
 	}
 
@@ -252,8 +295,16 @@ int main(int argc, char ** argv)
 	carbonInWidth[1] = fin_bc2->Parameter(2);
 	
 
-
+	/*
+							BELOW WAS FOR CALIBRATING Z2 AXIS ON BC1-BC2, BC3-BC4
+							BUT THAT IS DONE USING THE PARAMETERS a,b,c,a2,b2,c3 BELOW
 	// Do carbon peak plot for fun:
+	double a = 0.020542;
+	double b = 0.0305108;
+	double c = 0.0000114953;
+	double a2 = 0.00173144;
+	double b2 = 0.0384856;
+	double c2 = 0.000015362;
 	for (int event=0 ; event<nEvents ; event++)
 	{
 		t0Data->Clear();
@@ -283,15 +334,147 @@ int main(int argc, char ** argv)
 			BmnTrigWaveDigit * signalBC1 = (BmnTrigWaveDigit*) bc1Data->At(bc1Idx);
 			BmnTrigWaveDigit * signalBC2 = (BmnTrigWaveDigit*) bc2Data->At(bc2Idx);
 
-			bc1bc2->Fill( 36./35.3*sqrt( ((signalBC1->GetPeak() - pedBC1)*36./(carbonIn[0] - pedBC1)) * ((signalBC2->GetPeak() - pedBC2)*36./(carbonIn[1] - pedBC2)) ) ) ;
-			
+			singleBC1->Fill( sqrt( (signalBC1->GetPeak() - pedBC1)*(signalBC2->GetPeak() - pedBC2) ) );
+			double x = sqrt( (signalBC1->GetPeak() - pedBC1)*(signalBC2->GetPeak() - pedBC2) );
+			bc1bc2->Fill( a + b*x + c*x*x );
+
+			if( bc3Data->GetEntriesFast() && bc4Data->GetEntriesFast() ){
+				//if( fabs( (signalBC1->GetPeak() - pedBC1) - carbonIn[0] ) < 2*carbonInWidth[0] ){
+					//if( fabs( (signalBC2->GetPeak() - pedBC2) - carbonIn[1] ) < 2*carbonInWidth[1] ){
+						int bc3Idx;
+						findIdx(bc3Data,bc3Idx,t0Time);
+						int bc4Idx;
+						findIdx(bc4Data,bc4Idx,t0Time);
+
+						BmnTrigWaveDigit * signalBC3 = (BmnTrigWaveDigit*) bc3Data->At(bc3Idx);
+						BmnTrigWaveDigit * signalBC4 = (BmnTrigWaveDigit*) bc4Data->At(bc4Idx);
+
+						TwodPlot->Fill( sqrt( (signalBC1->GetPeak() - pedBC1)*(signalBC2->GetPeak() - pedBC2) ) , sqrt( (signalBC3->GetPeak() - pedBC3)*(signalBC4->GetPeak() - pedBC4) ) );
+						bc3bc4->Fill( sqrt( (signalBC3->GetPeak() - pedBC3)*(signalBC4->GetPeak() - pedBC4) ) );
+						double x2 = sqrt( (signalBC3->GetPeak() - pedBC3)*(signalBC4->GetPeak() - pedBC4) );
+
+						if( fabs( (signalBC1->GetPeak() - pedBC1) - carbonIn[0] ) < 2*carbonInWidth[0] )
+							if( fabs( (signalBC2->GetPeak() - pedBC2) - carbonIn[1] ) < 2*carbonInWidth[1] )
+								bc3bc4_calib->Fill( a2 + b2*x2 + c2*x2*x2 );	
+					//}
+				//}
+			}
+
 		}
 
 
 	}
 
+	double par_bc1[9];
+	TF1 * full = new TF1("full","gaus(0)+gaus(3)+gaus(6)",0,4000);
+	double peakPos = sqrt( (carbonIn[0] - pedBC1)*(carbonIn[1] - pedBC2) );
+	double comSig = carbonInWidth[0];
+	par_bc1[0] = singleBC1->GetMaximum();
+	par_bc1[1] = peakPos;
+	par_bc1[2] = comSig;
+	par_bc1[3] = singleBC1->GetMaximum()/2.;
+	par_bc1[4] = peakPos + 2.5*( comSig );
+	par_bc1[5] = ( carbonInWidth[0] );
+	par_bc1[6] = singleBC1->GetMaximum()/4.;
+	par_bc1[7] = peakPos + 6*( comSig );
+	par_bc1[8] = ( carbonInWidth[0] );
+	full->SetParameters( par_bc1 );
+	TFitResultPtr ptr = singleBC1->Fit(full,"QES");
+
+	TF1 * f1 = new TF1("f1","gaus",0,2000);
+	f1->SetLineColor(1);
+	f1->SetLineStyle(7);
+	TF1 * f2 = new TF1("f2","gaus",0,2000);
+	f2->SetLineColor(1);
+	f2->SetLineStyle(7);
+	TF1 * f3 = new TF1("f3","gaus",0,2000);
+	f3->SetLineColor(1);
+	f3->SetLineStyle(7);
+
+	f1->SetParameter( 0, ptr->Parameter(0) );
+	f1->SetParameter( 1, ptr->Parameter(1) );
+	f1->SetParameter( 2, ptr->Parameter(2) );
+	f2->SetParameter( 0, ptr->Parameter(3) );
+	f2->SetParameter( 1, ptr->Parameter(4) );
+	f2->SetParameter( 2, ptr->Parameter(5) );
+	f3->SetParameter( 0, ptr->Parameter(6) );
+	f3->SetParameter( 1, ptr->Parameter(7) );
+	f3->SetParameter( 2, ptr->Parameter(8) );
 
 
+	cout << "3 peaks: " << ptr->Parameter(1) << " " << ptr->Parameter(2) << "\n"
+			    << ptr->Parameter(4) << " " << ptr->Parameter(5) << "\n"		
+			    << ptr->Parameter(7) << " " << ptr->Parameter(8) << "\n";
+
+	double par_bc2[9];
+	TF1 * full2 = new TF1("full2","gaus(0)+gaus(3)+gaus(6)",600,4000);
+	par_bc2[0] = bc3bc4->GetMaximum();
+	par_bc2[1] = 736;
+	par_bc2[2] = 65;
+	par_bc2[3] = par_bc2[0] / 2.;
+	par_bc2[4] = 945;
+	par_bc2[5] = 65;
+	par_bc2[6] = par_bc2[0] / 4.;
+	par_bc2[7] = 1180;
+	par_bc2[8] = 65;
+	full2->SetParameters( par_bc2 );
+	TFitResultPtr ptr2 = bc3bc4->Fit(full2,"QESR");
+	
+	TF1 * f11 = new TF1("f11","gaus",0,2000);
+	f11->SetLineColor(1);
+	f11->SetLineStyle(7);
+	TF1 * f22 = new TF1("f22","gaus",0,2000);
+	f22->SetLineColor(1);
+	f22->SetLineStyle(7);
+	TF1 * f33 = new TF1("f33","gaus",0,2000);
+	f33->SetLineColor(1);
+	f33->SetLineStyle(7);
+
+	f11->SetParameter( 0, ptr2->Parameter(0) );
+	f11->SetParameter( 1, ptr2->Parameter(1) );
+	f11->SetParameter( 2, ptr2->Parameter(2) );
+	f22->SetParameter( 0, ptr2->Parameter(3) );
+	f22->SetParameter( 1, ptr2->Parameter(4) );
+	f22->SetParameter( 2, ptr2->Parameter(5) );
+	f33->SetParameter( 0, ptr2->Parameter(6) );
+	f33->SetParameter( 1, ptr2->Parameter(7) );
+	f33->SetParameter( 2, ptr2->Parameter(8) );
+
+
+	cout << "3 peaks: " << ptr2->Parameter(1) << " " << ptr2->Parameter(2) << "\n"
+			    << ptr2->Parameter(4) << " " << ptr2->Parameter(5) << "\n"		
+			    << ptr2->Parameter(7) << " " << ptr2->Parameter(8) << "\n";
+
+
+	TApplication theApp("App",&argc,argv);
+	TCanvas *c1 = new TCanvas("Fitting BC1-BC2 With 3 Gaussians");
+	c1->Divide(2,1);
+	c1->cd(1);
+	singleBC1->Draw();
+	f1->Draw("same");
+	f2->Draw("same");
+	f3->Draw("same");
+	c1->cd(2);
+	bc1bc2->Draw();
+	c1->Update();
+
+
+
+	TCanvas *c0 = new TCanvas("Fitting BC3-BC4 With 3 Gaussians");	
+	c0->Divide(3,1);
+	c0->cd(1);
+	TwodPlot->Draw("colz");
+	c0->cd(2);
+	bc3bc4->Draw();
+	f11->Draw("same");
+	f22->Draw("same");
+	f33->Draw("same");
+	c0->cd(3);
+	bc3bc4_calib->Draw();
+	c0->Update();
+
+	//theApp.Run();
+	*/
 
 
 	infile->Close();
@@ -338,12 +521,14 @@ int main(int argc, char ** argv)
 	BC4_tdiff_ped->Write();
 
 	bc1bc2->Write();
+	bc3bc4->Write();
 
 	outFile->Close();
 
 	return 0;
 	}
 }
+
 
 void findIdx( TClonesArray* data, int &index , double refT){
 	double minT = 1e4;

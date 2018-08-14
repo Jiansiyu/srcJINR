@@ -65,17 +65,7 @@ int main(int argc, char ** argv)
 		return -1;
 	}
 
-	// Init BmnTOF1Detector
-	BmnTOF1Detector * Plane[20];
-	TString name;
-	for (Int_t i = 0; i < 20; i++) {
-		name = Form("Plane%d", i);
-		cout << endl << "==============Init " << name << "=============" << endl;
-		Plane[i] = new BmnTOF1Detector(i, 1, NULL);
-		Plane[i]->SetGeoFile("geofile_full_src_noZshift.root");
-	}//*/
 
-	/*
 	// Try opening the LR corr file if it exists:
 	ifstream f_corr;
 	string dir = std::getenv("VMCWORKDIR");
@@ -135,9 +125,6 @@ int main(int argc, char ** argv)
 	f_corr_walk.getline(line3, 256);
 	f_corr_walk.getline(line3, 256);
 	int tmp_Pl, tmp_St, tmp_Pt;
-	double tmp_Sh, tmp_p0, tmp_p1, tmp_p2, tmp_p0e, tmp_p1e, tmp_p2e;
-	double walkFunc[20][48][4] = {0.};
-	double walkFunc[20][48][4] = {0.};
 	double tmp_Sh, tmp_p0, tmp_p1, tmp_p2, tmp_p0e, tmp_p1e, tmp_p2e;
 	double walkFunc[20][48][4] = {0.};
 	if (f_corr_walk.is_open() == true){
@@ -504,7 +491,7 @@ int main(int argc, char ** argv)
 
 					for( int group = 0 ; group < result.size() ; group++){
 					}
-
+					/*
 					//cout << "\tnumber of clusters: " << result.size() << "\n";
 					hClusterMult[pl]->Fill( result.size() );
 					int TEST = 0;
@@ -524,6 +511,7 @@ int main(int argc, char ** argv)
 						tofCluster[pl].push_back( selectStrip );
 						//cout << "\n";
 					}
+					*/
 				}
 
 				// Now we have all tof400 hits properly clustered for each plane so we can look at these hits.
@@ -569,7 +557,7 @@ int main(int argc, char ** argv)
 	}
 	outFile->Write();
 	outFile->Close();
-	*/
+	
 	return 0;
 }
 

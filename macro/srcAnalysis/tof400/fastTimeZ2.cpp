@@ -139,6 +139,9 @@ int main(int argc, char ** argv)
 	} 
 	
 	// Histograms for looking at cuts
+	double a = 0.00173144; // Z^2 = a + b*ADC+ c*ADC^2
+	double b = 0.0384856;  // 	
+	double c = 0.000015362;
 	TString hName;
 	hName = Form("hZ2Fast");
 	TH1D * hZ2	= new TH1D(hName,hName,1000,0,50);
@@ -376,10 +379,11 @@ int main(int argc, char ** argv)
 				BmnTrigWaveDigit * signal2 = (BmnTrigWaveDigit *) bc4Data->At(bc4Idx);
 				adcBC4 = signal2->GetPeak() - pedBC4;
 
-				
-				hZ2All->Fill( sqrt( adcBC3 * adcBC4 ) * 36./725.);
+				double x = sqrt( adcBC3 * adcBC4);
+				double fillMe = a + b*x + c*x*x;
+				hZ2All->Fill( fillMe );
 				if( doBC )
-					hZ2->Fill( sqrt( adcBC3 * adcBC4 ) * 36/725.);
+					hZ2->Fill( fillMe );
 				
 			}
 				
