@@ -50,76 +50,97 @@
 using namespace std;
 
 class BmnTOF1Detector {
-private:
+	private:
 
-    static const Int_t fNStr = 48;
-    Double_t fStripLength, fSignalVelosity;
-    TString fName;
-    Int_t fNPlane;
-    Int_t fMaxL, fMaxR, fMax;
-    Int_t fFillHist;
-    Double_t fTimeL[fNStr], fTimeR[fNStr], fTimeLtemp[fNStr], fTimeRtemp[fNStr], fTime[fNStr];
-    Double_t fWidthL[fNStr], fWidthR[fNStr], fWidthLtemp[fNStr], fWidthRtemp[fNStr], fWidth[fNStr];
-    Double_t fTof[fNStr];
-    Double_t fDoubleTemp, fMaxDelta;
-    Int_t fHit_Per_Ev, fNEvents, fStrip;
-    Bool_t fFlagHit[fNStr], fKilled[fNStr];
-    Double_t fCorrLR[fNStr], fCorrTimeShift[fNStr];
-    Double_t fDigitL[fNStr], fDigitR[fNStr], fHit[fNStr];
-    TVector3 fCentrStrip[fNStr], fCrossPoint[fNStr], fVectorTemp;
-    BmnTrigDigit *fT0;
+		static const Int_t fNStr = 48;
+		
+		// New holders for class
+		double fCorrLR[fNStr];
+		double fStripShift[fNStr];
+		double fWalkFunc[fNStr][4];
+		TVector3 fCenterStrip[fNStr];
 
-    TList *fHistListStat;
-    TList *fHistListdt;
+		// Old holders that I'm phasing out
+		Double_t fStripLength, fSignalVelosity;
+		TString fName;
+		Int_t fNPlane;
+		Int_t fMaxL, fMaxR, fMax;
+		Int_t fFillHist;
+		Double_t fTimeL[fNStr], fTimeR[fNStr], fTimeLtemp[fNStr], fTimeRtemp[fNStr], fTime[fNStr];
+		Double_t fWidthL[fNStr], fWidthR[fNStr], fWidthLtemp[fNStr], fWidthRtemp[fNStr], fWidth[fNStr];
+		Double_t fTof[fNStr];
+		Double_t fDoubleTemp, fMaxDelta;
+		Int_t fHit_Per_Ev, fNEvents, fStrip;
+		Bool_t fFlagHit[fNStr], fKilled[fNStr];
+		Double_t fCorrTimeShift[fNStr];
+		Double_t fDigitL[fNStr], fDigitR[fNStr], fHit[fNStr];
+		TVector3 fCrossPoint[fNStr], fVectorTemp;
+		BmnTrigDigit *fT0;
 
-    TH2I *hdT_vs_WidthDet[fNStr + 1], *hdT_vs_WidthT0[fNStr + 1];
-    TH1I * hdT[fNStr + 1];
-    TH1I *hHitByCh, *hHitPerEv;
-    TH2I *hHitLR, *hXY;
-    TH1S *hDy_near, *hDtime_near, *hDWidth_near;
-    TH1S *hDy_acros, *hDtime_acros, *hDWidth_acros;
-    TH2S *hTempDtimeDy_near, *hTempDtimeDy_acros;
+		TList *fHistListStat;
+		TList *fHistListdt;
 
-    TGraphErrors *gSlew[fNStr];
+		TH2I *hdT_vs_WidthDet[fNStr + 1], *hdT_vs_WidthT0[fNStr + 1];
+		TH1I * hdT[fNStr + 1];
+		TH1I *hHitByCh, *hHitPerEv;
+		TH2I *hHitLR, *hXY;
+		TH1S *hDy_near, *hDtime_near, *hDWidth_near;
+		TH1S *hDy_acros, *hDtime_acros, *hDWidth_acros;
+		TH2S *hTempDtimeDy_near, *hTempDtimeDy_acros;
 
-    void FillHist();
-    Double_t CalculateDt(Int_t Str);
-    Bool_t GetCrossPoint(Int_t NStrip);
-    void AddHit(Int_t Str, TClonesArray *TofHit);
-    void AddConteiner(Int_t Str, TClonesArray *TofHit);
+		TGraphErrors *gSlew[fNStr];
+
+		void FillHist();
+		Double_t CalculateDt(Int_t Str);
+		Bool_t GetCrossPoint(Int_t NStrip);
+		void AddHit(Int_t Str, TClonesArray *TofHit);
+		void AddConteiner(Int_t Str, TClonesArray *TofHit);
 
 
-public:
-    BmnTOF1Detector();
+	public:
+		BmnTOF1Detector();
 
-    BmnTOF1Detector(Int_t NPlane, Int_t FillHistLevel, TTree *tree); // FillHistLevel=0-don"t fill, FillHistLevel=1-fill statistic, FillHistLevel>1-fill all
+		BmnTOF1Detector(Int_t NPlane, Int_t FillHistLevel, TTree *tree); // FillHistLevel=0-don"t fill, FillHistLevel=1-fill statistic, FillHistLevel>1-fill all
 
-    virtual ~BmnTOF1Detector() {
-    };
+		virtual ~BmnTOF1Detector() {
+		};
 
-    void Clear();
-    Bool_t SetDigit(BmnTof1Digit *TofDigit);
-    void KillStrip(Int_t NumberOfStrip);
-    Int_t FindHits(BmnTrigDigit *T0);
-    Int_t FindHits(BmnTrigDigit *T0, TClonesArray *TofHit);
-    TList* GetList(Int_t n);
-    TString GetName();
-    Bool_t SetCorrLR(Double_t *Mass);
-    Bool_t SetCorrLR(TString NameFile);
-    Bool_t SetCorrSlewing(TString NameFile);
-    Bool_t SetCorrTimeShift(TString NameFile); //FIXME
-    Bool_t SetGeoFile(TString NameFile);
-    Bool_t SetGeo(BmnTof1GeoUtils *pGeoUtils);
-    Bool_t GetXYZTime(Int_t Str, TVector3 *XYZ, Double_t *ToF);
-    Double_t GetWidth(Int_t Str);
-    Double_t GetTime(Int_t Str);
-    Bool_t SaveHistToFile(TString NameFile);
+		void Clear();
 
-    Int_t GetFillHistLevel() {
-        return fFillHist;
-    };
+		// New functions that I'm using
+		void SetCorrLR( string pathToFile );
+		void SetStripShift( string pathToFile );
+		void SetWalkFunc( string pathToFile );
+		void SetCorrTimeShift( string pathToFile );
+		void TestPrint( int strip );
+		void SetGeoFile( string pathToFile );
+	
+		// Old functions I'm working to phase out
+		Bool_t SetDigit(BmnTof1Digit *TofDigit);
+		void KillStrip(Int_t NumberOfStrip);
+		Int_t FindHits(BmnTrigDigit *T0);
+		Int_t FindHits(BmnTrigDigit *T0, TClonesArray *TofHit);
+		TList* GetList(Int_t n);
+		TString GetName();
+		Bool_t SetCorrLR(Double_t *Mass);
+		Bool_t SetGeo(BmnTof1GeoUtils *pGeoUtils);
+		Bool_t GetXYZTime(Int_t Str, TVector3 *XYZ, Double_t *ToF);
+		Double_t GetWidth(Int_t Str);
+		Double_t GetTime(Int_t Str);
+		Bool_t SaveHistToFile(TString NameFile);
 
-    ClassDef(BmnTOF1Detector, 4);
+		Int_t GetFillHistLevel() {
+			return fFillHist;
+		};
+
+		// OLD FUNCTIONS THAT I HAVE PHASED OUT
+		Bool_t SetCorrLR( TString NameFile ){return kTRUE;};
+		Bool_t SetCorrSlewing( TString NameFile ){return kTRUE;};
+		Bool_t SetCorrTimeShift( TString NameFile ){return kTRUE;};
+		Bool_t SetGeoFile(TString NameFile){return kTRUE;};
+
+
+		ClassDef(BmnTOF1Detector, 4);
 
 };
 

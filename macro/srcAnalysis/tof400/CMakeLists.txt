@@ -53,5 +53,8 @@ target_link_libraries(fastTimeZ2 BmnData Core Base Sts Silicon TOF1 UniDb BmnSte
 	add_executable(tofAnalysis tofAnalysis.cpp)
 target_link_libraries(tofAnalysis BmnData Core Base Sts Silicon TOF1 UniDb BmnSteering Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
 	
+	add_executable(class_tofAnalysis class_tofAnalysis.cpp)
+target_link_libraries(class_tofAnalysis BmnData Core Base Sts Silicon TOF1 UniDb BmnSteering Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+	
 	add_executable(testUnion testUnion.cpp)
 target_link_libraries(testUnion BmnData Core Base Sts Silicon TOF1 UniDb BmnSteering Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)

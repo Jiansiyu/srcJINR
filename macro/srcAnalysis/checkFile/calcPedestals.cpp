@@ -91,6 +91,10 @@ int main(int argc, char ** argv)
 
 	TH1D * bc1bc2	= new TH1D("CarbonIn","CarbonIn",1000,0,100);
 	TH1D * bc3bc4	= new TH1D("CarbonOut","CarbonOut",1000,0,100);
+	TH1D * bc1bc2_uncalib	= new TH1D("CarbonIn_uncalib","CarbonIn_uncalib",2250,-500,4000);
+	TH1D * bc3bc4_uncalib	= new TH1D("CarbonOut_uncalib","CarbonOut_uncalib",2250,-500,4000);
+	TH2D * TwodPlot		= new TH2D("TwodPlot","TwodPlot",450,-500,4000,450,-500,4000);
+	// Fit functions for BC1-BC2, and BC3-BC4 calibration
 	double a = 0.020542;
 	double b = 0.0305108;
 	double c = 0.0000114953;
@@ -299,12 +303,6 @@ int main(int argc, char ** argv)
 							BELOW WAS FOR CALIBRATING Z2 AXIS ON BC1-BC2, BC3-BC4
 							BUT THAT IS DONE USING THE PARAMETERS a,b,c,a2,b2,c3 BELOW
 	// Do carbon peak plot for fun:
-	double a = 0.020542;
-	double b = 0.0305108;
-	double c = 0.0000114953;
-	double a2 = 0.00173144;
-	double b2 = 0.0384856;
-	double c2 = 0.000015362;
 	for (int event=0 ; event<nEvents ; event++)
 	{
 		t0Data->Clear();
@@ -334,7 +332,7 @@ int main(int argc, char ** argv)
 			BmnTrigWaveDigit * signalBC1 = (BmnTrigWaveDigit*) bc1Data->At(bc1Idx);
 			BmnTrigWaveDigit * signalBC2 = (BmnTrigWaveDigit*) bc2Data->At(bc2Idx);
 
-			singleBC1->Fill( sqrt( (signalBC1->GetPeak() - pedBC1)*(signalBC2->GetPeak() - pedBC2) ) );
+			bc1bc2_uncalib->Fill( sqrt( (signalBC1->GetPeak() - pedBC1)*(signalBC2->GetPeak() - pedBC2) ) );
 			double x = sqrt( (signalBC1->GetPeak() - pedBC1)*(signalBC2->GetPeak() - pedBC2) );
 			bc1bc2->Fill( a + b*x + c*x*x );
 
@@ -350,12 +348,12 @@ int main(int argc, char ** argv)
 						BmnTrigWaveDigit * signalBC4 = (BmnTrigWaveDigit*) bc4Data->At(bc4Idx);
 
 						TwodPlot->Fill( sqrt( (signalBC1->GetPeak() - pedBC1)*(signalBC2->GetPeak() - pedBC2) ) , sqrt( (signalBC3->GetPeak() - pedBC3)*(signalBC4->GetPeak() - pedBC4) ) );
-						bc3bc4->Fill( sqrt( (signalBC3->GetPeak() - pedBC3)*(signalBC4->GetPeak() - pedBC4) ) );
+						bc3bc4_uncalib->Fill( sqrt( (signalBC3->GetPeak() - pedBC3)*(signalBC4->GetPeak() - pedBC4) ) );
 						double x2 = sqrt( (signalBC3->GetPeak() - pedBC3)*(signalBC4->GetPeak() - pedBC4) );
 
 						if( fabs( (signalBC1->GetPeak() - pedBC1) - carbonIn[0] ) < 2*carbonInWidth[0] )
 							if( fabs( (signalBC2->GetPeak() - pedBC2) - carbonIn[1] ) < 2*carbonInWidth[1] )
-								bc3bc4_calib->Fill( a2 + b2*x2 + c2*x2*x2 );	
+								bc3bc4->Fill( a2 + b2*x2 + c2*x2*x2 );	
 					//}
 				//}
 			}
@@ -369,17 +367,17 @@ int main(int argc, char ** argv)
 	TF1 * full = new TF1("full","gaus(0)+gaus(3)+gaus(6)",0,4000);
 	double peakPos = sqrt( (carbonIn[0] - pedBC1)*(carbonIn[1] - pedBC2) );
 	double comSig = carbonInWidth[0];
-	par_bc1[0] = singleBC1->GetMaximum();
+	par_bc1[0] = bc1bc2_uncalib->GetMaximum();
 	par_bc1[1] = peakPos;
 	par_bc1[2] = comSig;
-	par_bc1[3] = singleBC1->GetMaximum()/2.;
+	par_bc1[3] = bc1bc2_uncalib->GetMaximum()/2.;
 	par_bc1[4] = peakPos + 2.5*( comSig );
 	par_bc1[5] = ( carbonInWidth[0] );
-	par_bc1[6] = singleBC1->GetMaximum()/4.;
+	par_bc1[6] = bc1bc2_uncalib->GetMaximum()/4.;
 	par_bc1[7] = peakPos + 6*( comSig );
 	par_bc1[8] = ( carbonInWidth[0] );
 	full->SetParameters( par_bc1 );
-	TFitResultPtr ptr = singleBC1->Fit(full,"QES");
+	TFitResultPtr ptr = bc1bc2_uncalib->Fit(full,"QES");
 
 	TF1 * f1 = new TF1("f1","gaus",0,2000);
 	f1->SetLineColor(1);
@@ -408,7 +406,7 @@ int main(int argc, char ** argv)
 
 	double par_bc2[9];
 	TF1 * full2 = new TF1("full2","gaus(0)+gaus(3)+gaus(6)",600,4000);
-	par_bc2[0] = bc3bc4->GetMaximum();
+	par_bc2[0] = bc3bc4_uncalib->GetMaximum();
 	par_bc2[1] = 736;
 	par_bc2[2] = 65;
 	par_bc2[3] = par_bc2[0] / 2.;
@@ -418,7 +416,7 @@ int main(int argc, char ** argv)
 	par_bc2[7] = 1180;
 	par_bc2[8] = 65;
 	full2->SetParameters( par_bc2 );
-	TFitResultPtr ptr2 = bc3bc4->Fit(full2,"QESR");
+	TFitResultPtr ptr2 = bc3bc4_uncalib->Fit(full2,"QESR");
 	
 	TF1 * f11 = new TF1("f11","gaus",0,2000);
 	f11->SetLineColor(1);
@@ -450,7 +448,7 @@ int main(int argc, char ** argv)
 	TCanvas *c1 = new TCanvas("Fitting BC1-BC2 With 3 Gaussians");
 	c1->Divide(2,1);
 	c1->cd(1);
-	singleBC1->Draw();
+	bc1bc2_uncalib->Draw();
 	f1->Draw("same");
 	f2->Draw("same");
 	f3->Draw("same");
@@ -465,15 +463,15 @@ int main(int argc, char ** argv)
 	c0->cd(1);
 	TwodPlot->Draw("colz");
 	c0->cd(2);
-	bc3bc4->Draw();
+	bc3bc4_uncalib->Draw();
 	f11->Draw("same");
 	f22->Draw("same");
 	f33->Draw("same");
 	c0->cd(3);
-	bc3bc4_calib->Draw();
+	bc3bc4->Draw();
 	c0->Update();
 
-	//theApp.Run();
+	theApp.Run();
 	*/
 
 

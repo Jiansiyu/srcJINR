@@ -103,11 +103,7 @@ Int_t		BmnTof1GeoUtils::ParseTGeoManager(bool useMCinput, TH2D* h1, bool forced)
 			const double * rot = matrix->GetRotationMatrix();
 			const double * trans = matrix->GetTranslation();
 			const double * scal = matrix->GetScale();
-			cout << "rotation matrix: " << (rot[0]) << " " << (rot[1]) << " " << (rot[2]) << "\n"
-							<< (rot[3]) << " " << (rot[4]) << " " << (rot[5]) << "\n"
-							<< (rot[6]) << " " << (rot[7]) << " " << (rot[8]) << "\n\n";
-			cout << "translation: " << (trans[0]) << " " << (trans[1]) << " " << (trans[2]) << "\n";
-			cout << "scale: " << (scal[0]) << " " << (scal[1]) << " " << (scal[2]) << "\n";
+			matrix->Print();
 			cout << "X0Y0Z0: " << (X0Y0Z0[0]) << " " << (X0Y0Z0[1]) << " " << (X0Y0Z0[2]) << "\n";
 			cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
 
