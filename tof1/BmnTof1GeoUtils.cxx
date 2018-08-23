@@ -55,7 +55,7 @@ void		BmnTof1GeoUtils::FindNeighborStrips(TH1D* h1, TH2D* h2, bool doTest)
 		}// cycle2 by strips	
 	}// cycle1 by strips
 
-	cout<<" [BmnTof1GeoUtils::FindNeighborStrips] Neighbor strips: left = "<<NL<<", right = "<<NR<<endl;
+	//cout<<" [BmnTof1GeoUtils::FindNeighborStrips] Neighbor strips: left = "<<NL<<", right = "<<NR<<endl;
 }
 //------------------------------------------------------------------------------------------------------------------------	
 Int_t		BmnTof1GeoUtils::ParseTGeoManager(bool useMCinput, TH2D* h1, bool forced)
@@ -66,7 +66,7 @@ Int_t		BmnTof1GeoUtils::ParseTGeoManager(bool useMCinput, TH2D* h1, bool forced)
 	//	TString stripName, pathTOF = "/cave_1/TOFB1_0";
 	TString stripName, pathTOF = "/cave_1/TOF400_0";
 	gGeoManager->cd(pathTOF);
-	cout << "Path: " << pathTOF << "\n";
+	//cout << "Path: " << pathTOF << "\n";
 	Double_t *X0Y0Z0 = new Double_t[3]; X0Y0Z0[0] = X0Y0Z0[1] = X0Y0Z0[2] = 0.; // center of sensetive detector
 	Double_t  *local = new Double_t[3], master[3],  dX, dY, dZ;
 
@@ -82,7 +82,7 @@ Int_t		BmnTof1GeoUtils::ParseTGeoManager(bool useMCinput, TH2D* h1, bool forced)
 		TString PATH1 = pathTOF + "/" + detectorNode->GetName();
 		detectorID = detectorNode->GetNumber();
 		nDetectors++;
-		cout << "\tsub-path: " << PATH1 << "\n";
+		//cout << "\tsub-path: " << PATH1 << "\n";
 
 		TIterator *it2 = detectorNode->GetNodes()->MakeIterator(); 		
 		while( (stripNode = (TGeoNode*) it2->Next()) )		// strips
@@ -92,7 +92,7 @@ Int_t		BmnTof1GeoUtils::ParseTGeoManager(bool useMCinput, TH2D* h1, bool forced)
 	
 			TString PATH2 = PATH1 + "/" + stripName;
 			stripID = stripNode->GetNumber(); 
-			cout << "\t\tsub-path: " << PATH2 << " " << stripID << " " << nStrips << "\n";
+			//cout << "\t\tsub-path: " << PATH2 << " " << stripID << " " << nStrips << "\n";
 			nStrips++;
 			//    			cout<<"\n \tSTRIP: "<<stripNode->GetName()<<", copy# "<<stripID<<" path= "<<PATH2.Data();
 
@@ -103,13 +103,13 @@ Int_t		BmnTof1GeoUtils::ParseTGeoManager(bool useMCinput, TH2D* h1, bool forced)
 			const double * rot = matrix->GetRotationMatrix();
 			const double * trans = matrix->GetTranslation();
 			const double * scal = matrix->GetScale();
-			matrix->Print();
-			cout << "X0Y0Z0: " << (X0Y0Z0[0]) << " " << (X0Y0Z0[1]) << " " << (X0Y0Z0[2]) << "\n";
-			cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
+			//matrix->Print();
+			//cout << "X0Y0Z0: " << (X0Y0Z0[0]) << " " << (X0Y0Z0[1]) << " " << (X0Y0Z0[2]) << "\n";
+			//cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
 
 			TGeoBBox *box = (TGeoBBox*) gGeoManager->GetCurrentNode()->GetVolume()->GetShape(); 		
 			dX = box->GetDX(); dY = box->GetDY(); dZ = box->GetDZ();
-			cout << "dxyz: " << dX << " " << dY << " " << dZ << "\n";
+			//cout << "dxyz: " << dX << " " << dY << " " << dZ << "\n";
 			//      		cout<<"\n center: ("<<master[0]<<", "<<master[1]<<", "<<master[2]<<") d("<<dX<<", "<<dY<<", "<<dZ<<")";
 
 			volumeUID = BmnTOF1Point::GetVolumeUID(0, detectorID, stripID);   // regionID == 0 now 			
@@ -124,22 +124,22 @@ Int_t		BmnTof1GeoUtils::ParseTGeoManager(bool useMCinput, TH2D* h1, bool forced)
 			// edges on the front plate of the strips. perp along Z.
 			local[0] = -dX;	local[1] = -dY; local[2] = -dZ;
 			matrix->LocalToMaster(local, master);
-			cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
+			//cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
 			stripData.A.SetXYZ(master[0], master[1], master[2]);
 
 			local[0] = +dX;	local[1] = -dY; local[2] = -dZ;
 			matrix->LocalToMaster(local, master);
-			cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
+			//cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
 			stripData.B.SetXYZ(master[0], master[1], master[2]);	
 
 			local[0] = +dX;	local[1] = +dY; local[2] = -dZ;
 			matrix->LocalToMaster(local, master);
-			cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
+			//cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
 			stripData.C.SetXYZ(master[0], master[1], master[2]);				
 
 			local[0] = -dX;	local[1] = +dY; local[2] = -dZ;
 			matrix->LocalToMaster(local, master);
-			cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
+			//cout << "master: " << (master[0]) << " " << (master[1]) << " " << (master[2]) << "\n";
 			stripData.D.SetXYZ(master[0], master[1], master[2]);
 
 			stripData.InitCenterPerp();

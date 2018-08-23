@@ -470,7 +470,7 @@ int main(int argc, char ** argv)
 	
 								// Don't need to categorize strips that fall outside because
 								// automatically clustered as single-strips in my clusterList
-							if( (fabs( one.t - two.t ) > 2) || (fabs( one.y - two.y ) > 5) || (fabs( one.st - two.st ) > 10) ){
+							if( (fabs( one.t - two.t ) > 2) || (fabs( one.y - two.y ) > 7) || (fabs( one.st - two.st ) > 6) ){
 							}
 							else{
 								clusterList[pl][one.st].push_back( two.st );
@@ -594,8 +594,8 @@ int main(int argc, char ** argv)
 		hStripCluster[pl]->Write();
 
 		for( int st = 0 ; st < 48 ; st++){
-			//hToF_SingleEvents[pl][st]->Write();
-			//hToF_ClusteredEvents[pl][st]->Write();
+			hToF_SingleEvents[pl][st]->Write();
+			hToF_ClusteredEvents[pl][st]->Write();
 		}
 	}
 	outFile->Write();

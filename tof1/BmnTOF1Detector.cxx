@@ -3,333 +3,28 @@
 
 ClassImp(BmnTOF1Detector)
 
-	BmnTOF1Detector::BmnTOF1Detector() {
-	}
+BmnTOF1Detector::BmnTOF1Detector(){
+	// Empty constructor
+}
 
 //----------------------------------------------------------------------------------------
 
-BmnTOF1Detector::BmnTOF1Detector(Int_t NPlane, Int_t FillHist = 0, TTree *tree = NULL) {
-	Clear();
-	memset(fCorrTimeShift, 0, sizeof (fCorrTimeShift));
-	fNEvents = 0;
-	//KillStrip(0);
-	//KillStrip(47);
+BmnTOF1Detector::BmnTOF1Detector(int NPlane, int FillHist = 0, TTree *tree = NULL) {
 	fFillHist = FillHist;
 	fNPlane = NPlane;
-	fStripLength = 30; // cm
-	fSignalVelosity = 0.06; // 0.06 ns/cm
-	fMaxDelta = (fStripLength * 0.5 + 2.0) * fSignalVelosity; // + 20 mm on the strip edge
-
-	for (Int_t i = 0; i < fNStr; i++)
-		gSlew[i] = NULL;
+	fStripLength = 30; 		// cm
+	fSignalVelocity = 0.06; 	// 0.06 ns/cm
+	fMaxDelta = (fStripLength * 0.5 + 2.0) * fSignalVelocity; 
+					// + 20 mm on the strip edge
 
 	fName = Form("Plane_%d", NPlane);
-	TString Name;
-
-	if (fFillHist > 0) {
-		fHistListStat = new TList();
-		fHistListdt = new TList();
-
-		Name.Clear();
-		Name = Form("Hist_HitByCh_%s", fName.Data());
-		hHitByCh = new TH1I(Name, Name, fNStr + 1, -0.5, fNStr + 0.5);
-		fHistListStat->Add(hHitByCh);
-
-		Name.Clear();
-		Name = Form("Hist_HitPerEv_%s", fName.Data());
-		hHitPerEv = new TH1I(Name, Name, fNStr + 1, -0.5, fNStr + 0.5);
-		fHistListStat->Add(hHitPerEv);
-
-		Name.Clear();
-		Name = Form("Hist_HitLR_%s", fName.Data());
-		hHitLR = new TH2I(Name, Name, fNStr, 0, fNStr, fNStr, 0, fNStr);
-		fHistListStat->Add(hHitLR);
-
-		Name.Clear();
-		Name = Form("Hist_XY_%s", fName.Data());
-		hXY = new TH2I(Name, Name, 240, -150, 150, 120, -75, 75);
-		fHistListStat->Add(hXY);
-
-		hDy_near = new TH1S(Form("hDy_near_%s", fName.Data()), Form("hDy_near_%s", fName.Data()), 400, -20, 20);
-		hDtime_near = new TH1S(Form("hDtime_near_%s", fName.Data()), Form("hDtime_near_%s", fName.Data()), 400, -10, 10);
-		hDWidth_near = new TH1S(Form("hDWidth_near_%s", fName.Data()), Form("hDWidth_near_%s", fName.Data()), 256, -28., 28.);
-		hTempDtimeDy_near = new TH2S(Form("hTempDtimeDy_near_%s", fName.Data()), Form("hTempDtimeDy_near_%s", fName.Data()), 400, -10, 10, 200, -10, 10);
-		hDy_acros = new TH1S(Form("hDy_acros_%s", fName.Data()), Form("hDy_acros_%s", fName.Data()), 400, -20, 20);
-		hDtime_acros = new TH1S(Form("hDtime_acros_%s", fName.Data()), Form("hDtime_acros_%s", fName.Data()), 400, -10, 10);
-		hDWidth_acros = new TH1S(Form("hDWidth_acros_%s", fName.Data()), Form("hDWidth_acros_%s", fName.Data()), 256, -28., 28.);
-		hTempDtimeDy_acros = new TH2S(Form("hTempDtimeDy_acros_%s", fName.Data()), Form("hTempDtimeDy_acros_%s", fName.Data()), 400, -10, 10, 200, -10, 10);
-		fHistListStat->Add(hDy_near);
-		fHistListStat->Add(hDtime_near);
-		fHistListStat->Add(hDWidth_near);
-		fHistListStat->Add(hTempDtimeDy_near);
-		fHistListStat->Add(hDy_acros);
-		fHistListStat->Add(hDtime_acros);
-		fHistListStat->Add(hDWidth_acros);
-		fHistListStat->Add(hTempDtimeDy_acros);
-
-		for (Int_t i = 0; i < fNStr + 1; i++){
-			hdT_vs_WidthDet[i] = new TH2I (Form("dt_vs_WidthDet_str_%d_%s", i, fName.Data()), Form("dt_vs_WidthDet_str_%d_%s", i, fName.Data()), 1024, 0, 50, 1024, -4, 20);
-			fHistListdt->Add(hdT_vs_WidthDet[i]);
-		}
-		for (Int_t i = 0; i < fNStr + 1; i++){
-			hdT_vs_WidthT0[i] = new TH2I (Form("dt_vs_WidthT0_str_%d_%s", i, fName.Data()), Form("dt_vs_WidthT0_str_%d_%s", i, fName.Data()), 1024, 0, 50, 1024, -4, 20);
-			fHistListdt->Add(hdT_vs_WidthT0[i]);
-		}
-		for (Int_t i = 0; i < fNStr + 1; i++){
-			hdT[i] = new TH1I (Form("dt_str_%d_%s", i, fName.Data()), Form("dt_str_%d_%s", i, fName.Data()), 1024, -12, 12);
-			fHistListdt->Add(hdT[i]);
-		}
-
-	} else {
-
-		hHitByCh = NULL;
-		hHitPerEv = NULL;
-		hHitLR = NULL;
-		hXY = NULL;
-
-		hDy_near = NULL;
-		hDtime_near = NULL;
-		hDWidth_near = NULL;
-		hTempDtimeDy_near = NULL;
-		hDy_acros = NULL;
-		hDtime_acros = NULL;
-		hDWidth_acros = NULL;
-		hTempDtimeDy_acros = NULL;
-
-		for (Int_t i = 0; i < fNStr + 1; i++){
-			hdT_vs_WidthDet[i] = NULL;
-			hdT_vs_WidthT0[i] = NULL;        
-			hdT[i] = NULL;
-		}
-
-	}
-
-}
-
-//----------------------------------------------------------------------------------------
-
-void BmnTOF1Detector::Clear() {
+	memset(fCorrLR, 0, sizeof (fCorrLR));
 	memset(fStripShift, 0, sizeof(fStripShift));
 	memset(fWalkFunc, 0, sizeof(fWalkFunc));
-	memset(fTimeL, 0, sizeof (fTimeL));
-	memset(fTimeR, 0, sizeof (fTimeR));
-	memset(fTimeLtemp, 0, sizeof (fTimeLtemp));
-	memset(fTimeRtemp, 0, sizeof (fTimeRtemp));
-	memset(fTime, 0, sizeof (fTime));
-	memset(fWidthL, 0, sizeof (fWidthL));
-	memset(fWidthR, 0, sizeof (fWidthR));
-	memset(fWidthLtemp, 0, sizeof (fWidthLtemp));
-	memset(fWidthRtemp, 0, sizeof (fWidthRtemp));
-	memset(fWidth, 0, sizeof (fWidth));
-	memset(fFlagHit, 0, sizeof (fFlagHit));
-	memset(fTof, 0, sizeof (fTof));
-	memset(fDigitL, 0, sizeof (fDigitL));
-	memset(fDigitR, 0, sizeof (fDigitR));
-	memset(fHit, 0, sizeof (fHit));
+	memset(fGammaOffset, 0, sizeof (fGammaOffset));
 	memset(fKilled, 0, sizeof (fKilled));
-	memset(fCorrLR, 0, sizeof (fCorrLR));
-	fHit_Per_Ev = 0;
-
-	for (Int_t i = 0; i < fNStr; i++)
-		fCrossPoint[i].SetXYZ(0., 0., 0.);
 }
 
-//----------------------------------------------------------------------------------------
-
-Bool_t BmnTOF1Detector::SetDigit(BmnTof1Digit * TofDigit) {
-	fStrip = TofDigit->GetStrip();
-	if (fStrip < 0 || fStrip > fNStr) return kFALSE;
-	//cout << " Plane = " << TofDigit->GetPlane() << "; Strip " << TofDigit->GetStrip() << "; Side " << TofDigit->GetSide() << "; Time " << TofDigit->GetTime() << "; Amp " << TofDigit->GetAmplitude() << endl;
-	if (TofDigit->GetSide() == 0 && fFlagHit[fStrip] == kFALSE && fKilled[fStrip] == kFALSE) {
-		fTimeLtemp[fStrip] = TofDigit->GetTime() - 2. * fCorrLR[fStrip];
-		//cout << "Setting Shift: strip # " << fStrip << " shift val " << CorrLR[fStrip] << " curr timeL " << TofDigit->GetTime() << " shifted timeL " << fTimeLtemp[fStrip] <<  "\n";
-		fWidthLtemp[fStrip] = TofDigit->GetAmplitude();
-		fDigitL[fStrip]++;
-	}
-	if (TofDigit->GetSide() == 1 && fFlagHit[fStrip] == kFALSE && fKilled[fStrip] == kFALSE) {
-		fTimeRtemp[fStrip] = TofDigit->GetTime();
-		//cout << "Setting Shift: strip # " << fStrip << " shift val " << CorrLR[fStrip] << " curr timeR " << TofDigit->GetTime() << " shifted timeR " << fTimeRtemp[fStrip] <<  "\n";
-		fWidthRtemp[fStrip] = TofDigit->GetAmplitude();
-		fDigitR[fStrip]++;
-	}
-	if (
-			fTimeRtemp[fStrip] != 0 && fTimeLtemp[fStrip] != 0
-			&& TMath::Abs((fTimeLtemp[fStrip] - fTimeRtemp[fStrip]) * 0.5) <= fMaxDelta // cat for length of strip  
-			//        && TMath::Abs((fWidthLtemp[fStrip] - fWidthRtemp[fStrip]) * 0.5) <= 1.5 // cat for Amplitude correlation
-			//&& fFlagHit[fStrip] == kFALSE
-	   )
-		if (fFlagHit[fStrip] == kFALSE) {
-			//cout << "Before set variable: " << fTimeL[fStrip] << " " << fTimeR[fStrip] << "\n";
-			fTimeL[fStrip] = fTimeLtemp[fStrip];
-			fTimeR[fStrip] = fTimeRtemp[fStrip];
-			fWidthL[fStrip] = fWidthLtemp[fStrip];
-			fWidthR[fStrip] = fWidthRtemp[fStrip];
-			fFlagHit[fStrip] = kTRUE;
-			fHit[fStrip]++;
-			//cout << "After set variable: " << fTimeL[fStrip] << " " << fTimeR[fStrip] << "\n";
-		} else
-			fHit[fStrip]++;
-
-	return fFlagHit[fStrip];
-}
-
-//----------------------------------------------------------------------------------------
-
-void BmnTOF1Detector::KillStrip(Int_t NumberOfStrip) {
-	fKilled[NumberOfStrip] = kTRUE;
-}
-
-//----------------------------------------------------------------------------------------
-
-Int_t BmnTOF1Detector::FindHits(BmnTrigDigit *T0) {
-	return fHit_Per_Ev;
-}
-
-//----------------------------------------------------------------------------------------
-
-Int_t BmnTOF1Detector::FindHits(BmnTrigDigit *T0, TClonesArray *TofHit) {
-	fT0 = T0;
-	fNEvents++;
-	Bool_t flag;
-	for (Int_t i = 0; i < fNStr; i++)
-		if (
-				fWidthL[i] != 0 && fWidthR[i] != 0
-				//&& fFlagHit[fStrip] == kTRUE
-		   ) {
-			fHit_Per_Ev++;
-			fWidth[i] = fWidthL[i] + fWidthR[i];
-			fTime[i] = (fTimeL[i] + fTimeR[i]) * 0.5;
-			flag = GetCrossPoint(i);
-			if (fT0 == NULL) continue;
-			if (fT0 != NULL) fTof[i] = CalculateDt(i);
-			if (fFillHist > 0) {
-				hdT_vs_WidthDet[i] -> Fill(fWidth[i], fTof[i]);
-				hdT_vs_WidthT0[i] -> Fill(fT0->GetAmp(), fTof[i]);
-				hdT[i] -> Fill(fTof[i]);
-				hdT_vs_WidthDet[fNStr] -> Fill(fWidth[i], fTof[i]);
-				hdT_vs_WidthT0[fNStr] -> Fill(fT0->GetAmp(), fTof[i]);
-				hdT[fNStr] -> Fill(fTof[i]);
-				if (i > 3) {
-					if (fFlagHit[i - 1] == kTRUE) {
-						hDy_near->Fill(fCrossPoint[i].Y() - fCrossPoint[i - 1].Y());
-						hDtime_near->Fill(fTof[i] - fTof[i - 1]);
-						hDWidth_near->Fill(fWidth[i] - fWidth[i - 1]);
-						hTempDtimeDy_near->Fill(fTof[i] - fTof[i - 1], fCrossPoint[i].Y() - fCrossPoint[i - 1].Y());
-					}
-					if (fFlagHit[i - 2] == kTRUE) {
-						hDy_acros->Fill(fCrossPoint[i].Y() - fCrossPoint[i - 2].Y());
-						hDtime_acros->Fill(fTof[i] - fTof[i - 2]);
-						hDWidth_acros->Fill(fWidth[i] - fWidth[i - 2]);
-						hTempDtimeDy_acros->Fill(fTof[i] - fTof[i - 2], fCrossPoint[i].Y() - fCrossPoint[i - 2].Y());
-					}
-				}
-			}
-			TString Name = TofHit->GetClass()->GetName();
-			if (Name == "BmnTofHit"){
-				//            cout << " Fill BmnTofHit" << endl;
-				AddHit(i, TofHit);
-			}
-			else if (Name == "BmnTOF1Conteiner"){
-				//           cout << " Fill BmnTOF1Conteiner" << endl;
-				AddConteiner(i, TofHit);
-			}
-		}
-
-	if (fFillHist > 0)
-		FillHist();
-
-	return fHit_Per_Ev;
-}
-
-//------------------------------------------------------------------------------------------------------------------------
-
-void BmnTOF1Detector::AddHit(Int_t Str, TClonesArray *TofHit) {
-
-	fVectorTemp.SetXYZ(0.5, 0.36, 1.); // error for point dx = 0.5 cm; dy = 1.25/SQRT(12) = 0.36 cm; dz = 1(?)cm
-	Int_t UID = BmnTOF1Point::GetVolumeUID(0, fNPlane + 1, Str + 1); // strip [0,47] -> [1, 48]
-	BmnTofHit *pHit = new ((*TofHit)[TofHit->GetEntriesFast()]) BmnTofHit(UID, fCrossPoint[Str], fVectorTemp, -1);
-
-	pHit->SetTimeStamp(fTof[Str]);
-	pHit->AddLink(FairLink(0x1, -1));
-	pHit->AddLink(FairLink(0x2, -1));
-	pHit->AddLink(FairLink(0x4, UID));
-}
-
-//------------------------------------------------------------------------------------------------------------------------
-
-void BmnTOF1Detector::AddConteiner(Int_t Str, TClonesArray *TofHit) {
-
-	new((*TofHit)[TofHit->GetEntriesFast()]) BmnTOF1Conteiner(fNPlane, Str, fTimeL[Str], fTimeR[Str], fTime[Str], fWidthL[Str], fWidthR[Str], fWidth[Str], fCrossPoint[Str].x(), fCrossPoint[Str].y(), fCrossPoint[Str].z(), fT0->GetTime(), fT0->GetAmp());
-
-}
-
-//----------------------------------------------------------------------------------------
-
-void BmnTOF1Detector::FillHist() {
-	hHitPerEv->Fill(fHit_Per_Ev);
-	for (Int_t i = 0; i < fNStr; i++)
-		for (Int_t j = 0; j < fNStr; j++) {
-			if (fWidthL[i] != 0 && fWidthR[j] != 0) {
-				hHitLR->Fill(i, j);
-				if (i == j) {
-					hHitByCh->Fill(i);
-					hXY->Fill(fCrossPoint[i].x(), fCrossPoint[i].y());
-				}
-			}
-		}
-
-}
-
-//----------------------------------------------------------------------------------------
-
-Double_t BmnTOF1Detector::CalculateDt(Int_t Str = 0) {
-	Double_t dt = 0;
-	Double_t T0Amp;
-	dt = fTime[Str] - fT0->GetTime() - 270.; // RUN7 SRC
-	//dt = fTime[Str] - fT0->GetTime();
-
-	T0Amp = fT0->GetAmp();
-
-	/*dt = dt - (-6.794 + 2.11 * T0Amp
-	  - 0.1706 * T0Amp * T0Amp
-	  + 0.004286 * T0Amp * T0Amp * T0Amp); //RUN7 SRC By BC4-BC2 distribution (from run 3463) not work!!!*/
-
-	/*dt = dt - (1.947 - 0.5363 * T0Amp
-	  + 0.03428 * T0Amp * T0Amp
-	  - 0.0005853 * T0Amp * T0Amp * T0Amp);// RUN6 */
-
-	/*dt = dt - (18.7191 - 3.17596 * T0Amp
-	  + 0.172444 * T0Amp * T0Amp
-	  - 0.00292435 * T0Amp * T0Amp * T0Amp) // RUN7 SRC from dt_vs_WidthT0 Plane7 str2. for line -3.15016 + 0.195976*w 
-	  - (0.7491 - 0.0219 * T0Amp); // iteration 2*/
-
-	/*dt = dt - (1.564 + 0.1065 * T0Amp
-	  + 0.0 * T0Amp * T0Amp
-	  - 0.0 * T0Amp * T0Amp * T0Amp);//RUN7 BM@N preliminarily*/
-
-	if (gSlew[Str] != NULL) dt = dt - gSlew[Str]->Eval(fWidth[Str]) + fCorrTimeShift[Str]; // CorrTimeShift is ToF for Gamma
-	//cout << dt << endl;
-	return dt;
-}
-
-//----------------------------------------------------------------------------------------
-
-TList* BmnTOF1Detector::GetList(Int_t n = 0) {
-	if (fFillHist > 0) {
-		if (n == 0) return fHistListStat;
-	} else return NULL;
-}
-
-//----------------------------------------------------------------------------------------
-
-TString BmnTOF1Detector::GetName() {
-	return fName;
-}
-
-//----------------------------------------------------------------------------------------
-
-Bool_t BmnTOF1Detector::SetCorrLR(Double_t* Mass) {
-}
 
 //----------------------------------------------------------------------------------------
 
@@ -434,30 +129,13 @@ void BmnTOF1Detector::SetWalkFunc( string pathToFile ) {
 
 //----------------------------------------------------------------------------------------
 
+void BmnTOF1Detector::SetGammaOffset( string pathToFile ){}
+
+//----------------------------------------------------------------------------------------
+
 void BmnTOF1Detector::TestPrint( int strip ){
 	cout << fCorrLR[strip] << " " << fStripShift[strip] << " " << fWalkFunc[strip][0] << " " << fWalkFunc[strip][1] << " "
 		<< fWalkFunc[strip][2] << " " << fWalkFunc[strip][3] << "\n";
-}
-
-//----------------------------------------------------------------------------------------
-
-void BmnTOF1Detector::SetCorrTimeShift( string pathToFile ){
-}
-
-//----------------------------------------------------------------------------------------
-
-Bool_t BmnTOF1Detector::GetCrossPoint(Int_t NStrip = 0) {
-
-	fVectorTemp.SetXYZ(0., 0., 0.);
-	if (TMath::Abs((fTimeL[NStrip] - fTimeR[NStrip]) * 0.5) >= fMaxDelta)
-		return kFALSE; // estimated position out the strip edge.
-	double dL = (fTimeL[NStrip] - fTimeR[NStrip]) * 0.5 / fSignalVelosity;
-	fVectorTemp(0) = 0;
-	fVectorTemp(1) = dL;
-	fVectorTemp(2) = 0; //TMP ALIGMENT CORRECTIONS
-	fCrossPoint[NStrip] = fCenterStrip[NStrip] + fVectorTemp;
-	//    cout << "Z = " << fCrossPoint[NStrip].Z() << endl;
-	return kTRUE;
 }
 
 //----------------------------------------------------------------------------------------
@@ -466,7 +144,7 @@ void BmnTOF1Detector::SetGeoFile( string pathToFile ) {
 	
 	string dir = std::getenv("VMCWORKDIR"); 
 	dir += pathToFile;
-	cout << "TOF400-Setup: Attempting to open geometry file: " << dir << "\n"; 
+	//cout << "TOF400-Setup: Attempting to open geometry file: " << dir << "\n"; 
 
 	// get gGeoManager from ROOT file 
 	TFile* geoFile = new TFile( dir.c_str() , "READ");
@@ -503,78 +181,258 @@ void BmnTOF1Detector::SetGeoFile( string pathToFile ) {
 
 //----------------------------------------------------------------------------------------
 
-Bool_t BmnTOF1Detector::SetGeo(BmnTof1GeoUtils *pGeoUtils) {
-	Int_t UID;
-	for (Int_t i = 0; i < fNStr; i++) {
-		UID = BmnTOF1Point::GetVolumeUID(0, fNPlane + 1, i + 1); // strip [0,47] -> [1, 48]
-		const LStrip1 *pStrip = pGeoUtils->FindStrip(UID);
-		fCenterStrip[i] = pStrip->center;
-		//        if (fNPlane >= 5) fCentrStrip[i].SetX(fCentrStrip[i].X()+5.5); // for field run only
-		//        else fCentrStrip[i].SetX(fCentrStrip[i].X()+2.5);
+void BmnTOF1Detector::ClearHits(){
+	memset( tempHitTime, 0, sizeof(tempHitTime));
+	memset( tempHitAmps, 0, sizeof(tempHitAmps));
+	memset( tempCounter, 0, sizeof(tempCounter));
+
+	memset( fFlagHit, false, sizeof(fFlagHit));
+	memset( fTof, 0, sizeof(fTof));
+	memset( fAmp, 0, sizeof(fAmp));
+	memset( fYPos, 0, sizeof(fYPos));
+	memset( fXPos, 0, sizeof(fXPos));	
+
+	memset( stripsFired, 0, sizeof(stripsFired));
+	numStripsFired = 0;
+
+	numClusters = 0;
+	memset( final_Tof, 0, sizeof(final_Tof));
+	memset( final_Amp, 0, sizeof(final_Amp));
+	memset( final_YPos, 0, sizeof(final_YPos));
+	memset( final_XPos, 0, sizeof(final_XPos));
+
+	// Still phasing out
+	for (Int_t i = 0; i < fNStr; i++)
+		fCrossPoint[i].SetXYZ(0., 0., 0.);
+}
+
+void BmnTOF1Detector::InitSkim( BmnTof1Digit* tofDigit ){
+	int plane 	= tofDigit->GetPlane();
+	int strip 	= tofDigit->GetStrip();
+	int side 	= tofDigit->GetSide();
+	double tofT 	= tofDigit->GetTime();
+	double tofAmp 	= tofDigit->GetAmplitude();
+	
+	if( plane < 0 || plane > 19) 	return;
+	if( strip < 0 || strip > 47) 	return;
+	if( fKilled[strip] == true)	return;
+	if( side == 1) 			return;
+
+	if( side == 0){ // store info only for LH side 
+		if(  tempCounter[strip] > 4 ){
+			cerr << "Array not large enough, skipping this entry...\n";
+			return;
+		}
+		tempHitTime[strip][tempCounter[strip]] = tofT;
+		tempHitAmps[strip][tempCounter[strip]] = tofAmp;
+		tempCounter[strip]++;
 	}
+}
+
+//----------------------------------------------------------------------------------------
+
+void BmnTOF1Detector::CreateStripHit( BmnTof1Digit* tofDigit , double t0Time , double t0Amp){
+	int plane 	= tofDigit->GetPlane();
+	int strip 	= tofDigit->GetStrip();
+	int side 	= tofDigit->GetSide();
+	double tofT 	= tofDigit->GetTime();
+	double tofAmp 	= tofDigit->GetAmplitude();
+	
+	if( plane < 0 || plane > 19) 	return;
+	if( strip < 0 || strip > 47) 	return;
+	if( fKilled[strip] == true)	return;
+	if( side == 0) 			return;
+	
+	if( side == 1){ // store info for RH side and now look at LH side to create strip hit
+
+		for( int hit = 0 ; hit < tempCounter[strip] ; hit++){	
+			double tmpT = tempHitTime[strip][hit];
+			double tmpA = tempHitAmps[strip][hit];
+
+			if( fabs( (1./0.06)*(tmpT - tofT + fCorrLR[strip]) ) < 32 ){
+				double meanTime = (tmpT + tofT + fCorrLR[strip])*0.5;
+				double sumAmps = sqrt(tmpA * tofAmp);
+				double pos = 0.5*(1./0.06)*(tmpT - tofT + fCorrLR[strip]); // +/- 15cm
+				if( sumAmps < 9 ) return; // I don't want hits with low amplitude
+
+				if( ( fFlagHit[strip] == false) || ( fFlagHit[strip] == true && meanTime < fTof[strip] ) ){
+
+					double par0 = fWalkFunc[strip][1];
+					double par1 = fWalkFunc[strip][2];
+					double par2 = fWalkFunc[strip][3];
+					double shift = fWalkFunc[strip][0];
+	
+					double fixWalk = par0 + par1*exp( -(sumAmps - shift) / par2 );
+					fTof[strip] = meanTime - t0Time + (-6.1 + 27./sqrt(t0Amp) ) - fStripShift[strip] - fixWalk;
+					fAmp[strip] = sumAmps;
+					fYPos[strip] = pos;
+					fXPos[strip] = strip;
+					fFlagHit[strip] = true;
+
+					if( std::find( std::begin(stripsFired) , std::end(stripsFired) , strip) == std::end(stripsFired) ){
+						stripsFired[numStripsFired] = strip;
+						numStripsFired++;
+					}
+				}
+				
+			}
+
+		}	
+
+	}
+	
+}
+
+//----------------------------------------------------------------------------------------
+
+void BmnTOF1Detector::ClusterHits(){
+	if( numStripsFired == 0) return; // No strips fired in this plane
+
+	std::vector<int> firedStrips;
+	std::vector<int> clusterList[48];
+
+	for( int i = 0 ; i < numStripsFired ; i++)
+		firedStrips.push_back( stripsFired[i] );
+
+		// Sort which which strips fired
+	std::sort( firedStrips.begin() , firedStrips.end() );
+	
+		// Print option:
+	//cout << "Need to consider clustering for # strips: " << numStripsFired << "\n\tstrips: ";
+	//for( int i = 0 ; i < numStripsFired ; i++)
+	//	cout << firedStrips.at(i) << " ";
+	//cout << "\n";
+
+		// if there is only 1 strip fired, save that
+	if( numStripsFired == 1 ){
+		//cout << "\tonly one strip fired, so save the information in tofCluster and skip to filling histograms\n";
+		int strip = firedStrips.at(0);
+		final_Tof[numClusters] = fTof[strip];
+		final_Amp[numClusters] = fAmp[strip];
+		final_YPos[numClusters] = fYPos[strip];
+		final_XPos[numClusters] = fXPos[strip];
+		numClusters++;
+	}
+	else{
+		// Sort through multi-strip events to do clustering:
+		//cout << "\tmore than one strip fired, so we need to try to cluster them together\n";
+		for( int i = 0 ; i < firedStrips.size() ; i++){
+				// Initializing cluster list for every strip that has itself in it
+			clusterList[firedStrips.at(i)].push_back( firedStrips.at(i) );
+
+			for( int j = 0 ; j < firedStrips.size() ; j++){
+				if( j <= i ) continue;
+				int stOne = firedStrips.at(i);
+				int stTwo = firedStrips.at(j);
+
+				double tDiff 	= fTof[stOne] - fTof[stTwo];
+				double yDiff 	= fYPos[stOne] - fYPos[stTwo];
+				int xDiff 	= fXPos[stOne] - fXPos[stTwo];
+				if( (fabs( tDiff ) > 2) || (fabs( yDiff ) > 7) || (fabs( xDiff ) > 6) ){}
+				else{
+					clusterList[stOne].push_back( stTwo );
+				}
+
+			}
+				// Print option:
+			//cout << "\t\tresulting cluster list of strip: " << firedStrips.at(i) << "\n\t\t\t";
+			//for( int j = 0 ; j < clusterList[firedStrips.at(i) ].size() ; j++)
+			//	cout << clusterList[firedStrips.at(i) ].at(j) << " ";
+			//cout << "\n";
+			
+		}
+		        // Now with our clusterList, we need to do an intersection search and union clusters that are similar
+		std::vector< std::vector<int> > result;
+		//cout << "\tNow doing intersection/union for the cluster lists to get final result clusters\n";
+			// For all strips, take the cluster list
+		for( int idx = 0 ; idx <  firedStrips.size() ; idx++){
+			int st = firedStrips.at(idx);
+			//cout << "\t\tWorking on strip "  << st << "\n";
+				// For all the groups I already have, find out if any intersection with this cluster list, and if so, add it to group
+			bool insert = true;
+			for( int group = 0 ; group < result.size() ; group++){
+				std::vector<int> tmp;
+				std::vector<int> newGrp;
+				std::set_intersection( clusterList[st].begin() , clusterList[st].end(), \
+                                                                        result.at(group).begin() , result.at(group).end() , back_inserter(tmp) ) ;
+				
+				//cout << "\t\t\tintersection of how many elements?: " << tmp.size() << "\n";
+				if( tmp.size() ){
+						// Union two sets into the group and exit
+					std::set_union( clusterList[st].begin() , clusterList[st].end(), \
+                                                                                result.at(group).begin() , result.at(group).end() , back_inserter( newGrp ) );	
+					insert = false;
+					result.at(group).swap(newGrp);
+					break;
+				}
+			}
+				// Create new group if no group wiht an intersection
+			if( insert ){
+				if( clusterList[st].size() > 0)
+					result.push_back(  clusterList[st] );
+			}
+		}
+
+		//cout << "\tfinal number of clusters: " << result.size() << "\n";
+		for( int group = 0 ; group < result.size() ; group++){
+				// For each cluster, choose a representative strip 
+			//cout << "\t\tcluster " << group << ": ";
+			//cout << "\t\tNumber of strips in cluster: " << result.at(group).size() << "\n";
+			int strip = result.at(group).at(0);
+			double sumCharge 	= fAmp[strip];
+			double weightTime 	= fTof[strip] * fAmp[strip];
+			double weightPos	= fYPos[strip] * fAmp[strip];
+			
+			int repStrip = strip;
+			int repAmp = sumCharge;
+
+			//cout << "\t\tCreating representative for cluster:\n";
+			//cout << "\t\t\t" << fAmp[strip] << " " << fTof[strip] << " " << fYPos[strip] << "\n";
+			for( int hit = 1 ; hit < result.at(group).size() ; hit++){
+				strip = result.at(group).at(hit);
+				//cout << "\t\t\t" << fAmp[strip] << " " << fTof[strip] << " " << fYPos[strip] << "\n";
+				sumCharge	+= fAmp[strip];
+				weightTime	+= fTof[strip] * fAmp[strip];
+				weightPos	+= fYPos[strip] * fAmp[strip];
+
+				if(fAmp[strip] > repAmp){
+					repAmp = fAmp[strip];
+					repStrip = strip;
+				}
+			}
+			//cout << "\t\tResult: " << sumCharge / result.at(group).size() << " " << weightTime / sumCharge << " " << weightPos / sumCharge << "\n";
+			final_Tof[numClusters] = weightTime / sumCharge;
+			final_Amp[numClusters] = sumCharge / result.at(group).size();
+			final_YPos[numClusters] = weightPos / sumCharge;
+			final_XPos[numClusters] = repStrip;
+			numClusters++;
+			
+		}
+
+	}
+
+	return;
+}
+
+//----------------------------------------------------------------------------------------
+
+void BmnTOF1Detector::OutputToTree(){}
+
+
+//------------------------------------------------------------------------------------------------------------------------
+Bool_t BmnTOF1Detector::GetCrossPoint(Int_t NStrip = 0) {
+	/*
+	fVectorTemp.SetXYZ(0., 0., 0.);
+	if (TMath::Abs((fTimeL[NStrip] - fTimeR[NStrip]) * 0.5) >= fMaxDelta)
+		return kFALSE; // estimated position out the strip edge.
+	double dL = (fTimeL[NStrip] - fTimeR[NStrip]) * 0.5 / fSignalVelocity;
+	fVectorTemp(0) = 0;
+	fVectorTemp(1) = dL;
+	fVectorTemp(2) = 0; //TMP ALIGMENT CORRECTIONS
+	fCrossPoint[NStrip] = fCenterStrip[NStrip] + fVectorTemp;
+	//    cout << "Z = " << fCrossPoint[NStrip].Z() << endl;
+	*/
 	return kTRUE;
-}
-
-//----------------------------------------------------------------------------------------
-
-Bool_t BmnTOF1Detector::GetXYZTime(Int_t Str, TVector3 *XYZ, Double_t *ToF) {
-
-	if (fTof[Str] == 0) return kFALSE;
-	if (NULL == XYZ && NULL == ToF) return kFALSE;
-	XYZ->SetXYZ(fCrossPoint[Str].x(), fCrossPoint[Str].y(), fCrossPoint[Str].z());
-	*ToF = fTof[Str];
-	return kTRUE;
-}
-
-//----------------------------------------------------------------------------------------
-
-Double_t BmnTOF1Detector::GetWidth(Int_t Str = 1) {
-	return fWidth[Str];
-}
-
-//----------------------------------------------------------------------------------------
-
-Double_t BmnTOF1Detector::GetTime(Int_t Str = 1) {
-	return fTime[Str];
-}
-
-//----------------------------------------------------------------------------------------
-
-Bool_t BmnTOF1Detector::SaveHistToFile(TString NameFile) {
-
-	if (fFillHist > 0) {
-		TFile *fileout = new TFile(NameFile.Data(), "UPDATE");
-		Int_t ResWrite;
-
-		TDirectory *Dir;
-		TString Name;
-		Name = Form("Tof400_%s", fName.Data());
-		Dir = fileout->mkdir(Name.Data());
-		Dir->cd();
-		//Dir->pwd();
-
-		TDirectory * DirStat;
-		DirStat = Dir->mkdir("Statistic");
-		DirStat -> cd();
-		//DirStat->pwd();
-		ResWrite = 0;
-		ResWrite = fHistListStat->Write();
-		//cout << "Res write = " << ResWrite << endl;
-
-		TDirectory * DirdT;
-		DirdT = Dir->mkdir("dt");
-		DirdT -> cd();
-		//DirStat->pwd();
-		ResWrite = 0;
-		ResWrite = fHistListdt->Write();
-		//cout << "Res write = " << ResWrite << endl;
-
-		fileout->Close(); //*/
-		return kTRUE; //*/
-
-	} else
-		return kFALSE;
-
 }
 
 //----------------------------------------------------------------------------------------

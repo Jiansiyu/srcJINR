@@ -1,4 +1,6 @@
 void subtract(TString file1 , TString file2, int plane){
+	bool drawInd = true;
+
 	gStyle->SetOptFit(1);
 	gStyle->SetOptStat(0);
 	TFile * wall_Fi = new TFile(file1);
@@ -7,92 +9,122 @@ void subtract(TString file1 , TString file2, int plane){
 	
 	TString hName;
 	hName = Form("hToF_ClusteredEvents_%i_0",plane);
-	TH1D * wall = (TH1D* ) wall_Fi->Get(hName);	// wall = clustered events with Pb-wall
-	TH1D * nowall = (TH1D* ) nowa_Fi->Get(hName);
+	TH1D * multiClusterEvents_wall 		= (TH1D* ) wall_Fi->Get(hName);	// wall = clustered events with Pb-wall
+	TH1D * multiClusterEvents_nowall 	= (TH1D* ) nowa_Fi->Get(hName);
 
 	hName = Form("hToF_SingleEvents_%i_0",plane);
-	TH1D * wall2 = (TH1D* ) wall_Fi->Get(hName);
-	TH1D * nowall2 = (TH1D* ) nowa_Fi->Get(hName);
-	
-	//wall->Add(wall2,-1);
-	//nowall->Add(nowall2,-1);
+	TH1D * singleClusterEvents_wall 	= (TH1D* ) wall_Fi->Get(hName);
+	TH1D * singleClusterEvents_nowall 	= (TH1D* ) nowa_Fi->Get(hName);	
 
 	for( int st = 1 ; st < 48 ; st++){
-	
-		hName = Form("hToF_SingleEvents_%i_%i",plane,st);
-		TH1D * data_wa1 = (TH1D *)wall_Fi->Get(hName);
+		// Add all the strips for wall data file
 		hName = Form("hToF_ClusteredEvents_%i_%i",plane,st);
-		TH1D * data_wa2 = (TH1D *)wall_Fi->Get(hName);
-		
-		//data_wa2->Add(data_wa1,-1);		
-		wall->Add(data_wa2,1);
-		wall2->Add(data_wa1,1);
-
+		TH1D * data_multiCluster_wall 		= (TH1D *)wall_Fi->Get(hName);
 		hName = Form("hToF_SingleEvents_%i_%i",plane,st);
-		TH1D * data_n1 = (TH1D *)nowa_Fi->Get(hName);
+		TH1D * data_singleCluster_wall 		= (TH1D *)wall_Fi->Get(hName);
 		
-		hName = Form("hToF_ClusteredEvents_%i_%i",plane,st);
-		TH1D * data_n2 = (TH1D *)nowa_Fi->Get(hName);
-	
-		//data_n2->Add(data_n1,-1);
-		nowall->Add(data_n2,1);
-		nowall2->Add(data_n1,1);
+		multiClusterEvents_wall->Add( data_multiCluster_wall );
+		singleClusterEvents_wall->Add( data_singleCluster_wall );
 
-		delete data_wa1, data_wa2, data_n1, data_n2;
+		// Add all the strips for NO WALL data file
+		hName = Form("hToF_ClusteredEvents_%i_%i",plane,st);
+		TH1D * data_multiCluster_nowall 	= (TH1D *)nowa_Fi->Get(hName);
+		hName = Form("hToF_SingleEvents_%i_%i",plane,st);
+		TH1D * data_singleCluster_nowall 	= (TH1D *)nowa_Fi->Get(hName);
+		
+		multiClusterEvents_nowall->Add( data_multiCluster_nowall );
+		singleClusterEvents_nowall->Add( data_singleCluster_nowall );
+
+		delete data_multiCluster_wall, data_singleCluster_wall;
+		delete data_multiCluster_nowall, data_singleCluster_nowall;
 	}
 
-	TCanvas * c = new TCanvas("c");
-	//wall->SetStats(0);
-	//wall2->SetStats(0);
-	//nowall->SetStats(0);
-	//nowall2->SetStats(0);
-	wall->GetXaxis()->SetRangeUser(-2,8);
-	wall->SetTitle("");
-	wall->Draw();				// multi hits wall = blue
-	wall2->SetLineColor(2);			// single hits wall = red
-	wall2->Draw("hist,same");
-	
-						// multi hits no wall = green
+	singleClusterEvents_wall->SetStats(0);
+	multiClusterEvents_wall->SetStats(0);
+	singleClusterEvents_nowall->SetStats(0);
+	multiClusterEvents_nowall->SetStats(0);
+
+	// Look at Pb and No-Pb wall data separately, comparing multi cluster and single cluster event times
 	/*
-	nowall->Scale( wall->GetEntries() / nowall->GetEntries() );
-	nowall->SetLineColor(8);
-	//nowall->Draw("hist,same");
-
-						// sing hits no wall = purple/pink
-	nowall2->Scale( wall2->GetEntries() / nowall2->GetEntries() );
-	nowall2->SetLineColor(6);
-	//nowall2->Draw("hist,same");
-
-	// Subtrack blue from green:
-	wall->Add(nowall,-1);
-	wall2->Add(nowall2,-1);
-	//wall->Add(wall2,-1);
-	wall->Rebin(2);
-	wall2->Rebin(2);
-	wall->Draw("hist");
-	wall2->Draw("same,hist");
-	
-	wall->Add(wall2,-1);
-	wall->Rebin(2);
-	//wall->Draw("hist");
-	
-	TF1 * testFit = new TF1("testFit","gaus",-1.5,1.5);
-	testFit->SetParameter(0,wall->GetMaximum() );
-	testFit->SetParameter(1,0);
-	testFit->SetParameter(2,0.2);
-	wall->Fit("testFit","","QESR");
-	double par[3];
-	testFit->GetParameters(&par[0]);
-	testFit->SetParameters(par);
-	//testFit->Draw("same");
-
-	cout << sqrt( pow( par[2] - fabs(par[1]) , 2) - pow( 0.120 , 2) )*1000 << "\n";
-	
-	//wall->Draw("hist");
-	//nowall->Draw("hist,same");
-	wall->GetXaxis()->SetRangeUser(-2,8);
-	
-	*/
+	TCanvas * c = new TCanvas("Comparing Single and Multi Times - Pb Wall");
+	singleClusterEvents_wall->SetTitle("Comparing Single and Multi Times - Pb Wall");
+	singleClusterEvents_wall->Draw("hist");
+	multiClusterEvents_wall->SetLineColor(2);
+	multiClusterEvents_wall->Draw("hist,same");
 	c->Update();
+	
+	TCanvas * c2 = new TCanvas("Comparing Single and Multi Times - No Pb Wall");
+	singleClusterEvents_nowall->SetTitle("Comparing Single and Multi Times - No Pb Wall");
+	singleClusterEvents_nowall->Draw("hist");
+	multiClusterEvents_nowall->SetLineColor(2);
+	multiClusterEvents_nowall->Draw("hist,same");
+	c2->Update();
+	*/
+
+	// Now compare single cluster for Pb and No-Pb wall data
+	singleClusterEvents_nowall->Scale( singleClusterEvents_wall->GetEntries() / singleClusterEvents_nowall->GetEntries() );
+	multiClusterEvents_nowall->Scale( multiClusterEvents_wall->GetEntries() / multiClusterEvents_nowall->GetEntries() );
+	
+
+	TCanvas * c3 = new TCanvas("Comparing Single Cluster Times for Pb and No-Pb wall data");
+	singleClusterEvents_wall->SetTitle("Comparing Single Cluster Times for Pb and No-Pb wall data");
+	
+	//Draw them individually or do subtraction of two and fit:
+	if( drawInd){
+		singleClusterEvents_wall->Draw("hist");
+		singleClusterEvents_wall->GetXaxis()->SetRangeUser(-2,2);
+		singleClusterEvents_nowall->SetLineColor(2);
+		singleClusterEvents_nowall->Draw("hist,same");
+	}
+	else{
+		singleClusterEvents_wall->Add( singleClusterEvents_nowall , -1 );
+		singleClusterEvents_wall->GetXaxis()->SetRangeUser(-2,2);
+			// Doing fit:
+		TF1 * testFit = new TF1("testFit","gaus",-1.5,1.5);
+		testFit->SetParameter(0, singleClusterEvents_wall->GetMaximum() );
+		testFit->SetParameter(1,0);
+		testFit->SetParameter(2,0.2);
+		singleClusterEvents_wall->Fit("testFit","","QESR");
+		double par[3];
+		testFit->GetParameters(&par[0]);
+		testFit->SetParameters(par);
+		
+		singleClusterEvents_wall->Draw("hist");
+		testFit->Draw("same");
+		cout << "Fit Results [in ps]:\n"
+			<< "\tOffset: " << par[1]*1000. << "\n\tSigma: " << par[2]*1000. << "\n";
+	}
+
+	
+	TCanvas * c4 = new TCanvas("Comparing Multiple Cluster Times for Pb and No-Pb wall data");
+	multiClusterEvents_wall->SetTitle("Comparing Multiple Cluster Times for Pb and No-Pb wall data");
+	
+	if( drawInd){
+		multiClusterEvents_wall->Draw("hist");
+		multiClusterEvents_wall->GetXaxis()->SetRangeUser(-2,2);
+		multiClusterEvents_nowall->SetLineColor(2);
+		multiClusterEvents_nowall->Draw("hist,same");
+	}
+	else{
+		multiClusterEvents_wall->Add( multiClusterEvents_nowall , -1 );
+		multiClusterEvents_wall->GetXaxis()->SetRangeUser(-2,2);
+			// Doing fit:
+		TF1 * testFit = new TF1("testFit","gaus",-1.5,1.5);
+		testFit->SetParameter(0, multiClusterEvents_wall->GetMaximum() );
+		testFit->SetParameter(1,0);
+		testFit->SetParameter(2,0.2);
+		multiClusterEvents_wall->Fit("testFit","","QESR");
+		double par[3];
+		testFit->GetParameters(&par[0]);
+		testFit->SetParameters(par);
+
+		multiClusterEvents_wall->Draw("hist");
+		testFit->Draw("same");
+		cout << "Fit Results [in ps]:\n"
+			<< "\tOffset: " << par[1]*1000. << "\n\tSigma: " << par[2]*1000. << "\n";
+	}
+	c4->Update();
+	
+	
 
 }

@@ -33,6 +33,7 @@
 #include "TClonesArray.h"
 #include "TGraphErrors.h"
 #include "TVector3.h"
+#include "TVectorT.h"
 #include "TDirectory.h"
 #include <TGeoManager.h>
 #include <TKey.h>
@@ -46,99 +47,108 @@
 #include <list>
 #include <map>
 #include <deque>
+#include <iterator>
 
 using namespace std;
 
 class BmnTOF1Detector {
 	private:
-
-		static const Int_t fNStr = 48;
-		
+		//////////////////////////////////////////////////////////////////////////////////
 		// New holders for class
+		static const Int_t fNStr = 48; // number of strips in ToF400
+		TString fName; // name of class, it's just Plane_#
+		int fNPlane;   // same as the nPlane from contructor
+		int fFillHist; // what level to fill histograms
+		double fStripLength, fSignalVelocity;		// strip length and velocity
+		double fMaxDelta;				// how much leeway we allow for each strip in terms of length
 		double fCorrLR[fNStr];
 		double fStripShift[fNStr];
 		double fWalkFunc[fNStr][4];
+		bool fKilled[fNStr];
+		double fGammaOffset[fNStr];
 		TVector3 fCenterStrip[fNStr];
 
+		// For initial processing
+		double tempHitTime[fNStr][5];
+		double tempHitAmps[fNStr][5];
+		int tempCounter[fNStr];
+		
+		// For hit matching -- after this, there is
+		// one hit for every strip (although most strips
+		// don't fire of course)
+		bool fFlagHit[fNStr];
+		double fTof[fNStr];
+		double fAmp[fNStr];
+		double fYPos[fNStr];
+		int fXPos[fNStr];
+		
+		// Storage for how many strips fired after hit matching
+		int stripsFired[fNStr];
+		int numStripsFired;
+
+		// Holder for all possible clusters -- could be up to 48 of them
+		int 	numClusters = 0;
+		double 	final_Tof[fNStr];
+		double 	final_Amp[fNStr];
+		double 	final_YPos[fNStr];
+		int 	final_XPos[fNStr];
+		
+
+
 		// Old holders that I'm phasing out
-		Double_t fStripLength, fSignalVelosity;
-		TString fName;
-		Int_t fNPlane;
-		Int_t fMaxL, fMaxR, fMax;
-		Int_t fFillHist;
-		Double_t fTimeL[fNStr], fTimeR[fNStr], fTimeLtemp[fNStr], fTimeRtemp[fNStr], fTime[fNStr];
-		Double_t fWidthL[fNStr], fWidthR[fNStr], fWidthLtemp[fNStr], fWidthRtemp[fNStr], fWidth[fNStr];
-		Double_t fTof[fNStr];
-		Double_t fDoubleTemp, fMaxDelta;
-		Int_t fHit_Per_Ev, fNEvents, fStrip;
-		Bool_t fFlagHit[fNStr], fKilled[fNStr];
-		Double_t fCorrTimeShift[fNStr];
-		Double_t fDigitL[fNStr], fDigitR[fNStr], fHit[fNStr];
 		TVector3 fCrossPoint[fNStr], fVectorTemp;
 		BmnTrigDigit *fT0;
 
-		TList *fHistListStat;
-		TList *fHistListdt;
-
-		TH2I *hdT_vs_WidthDet[fNStr + 1], *hdT_vs_WidthT0[fNStr + 1];
-		TH1I * hdT[fNStr + 1];
-		TH1I *hHitByCh, *hHitPerEv;
-		TH2I *hHitLR, *hXY;
-		TH1S *hDy_near, *hDtime_near, *hDWidth_near;
-		TH1S *hDy_acros, *hDtime_acros, *hDWidth_acros;
-		TH2S *hTempDtimeDy_near, *hTempDtimeDy_acros;
-
-		TGraphErrors *gSlew[fNStr];
-
-		void FillHist();
-		Double_t CalculateDt(Int_t Str);
+		Double_t CalculateDt(Int_t Str){ return 0.;};
 		Bool_t GetCrossPoint(Int_t NStrip);
-		void AddHit(Int_t Str, TClonesArray *TofHit);
-		void AddConteiner(Int_t Str, TClonesArray *TofHit);
+		void AddHit(Int_t Str, TClonesArray *TofHit){return;};
+		void AddConteiner(Int_t Str, TClonesArray *TofHit){ return;};
 
 
 	public:
-		BmnTOF1Detector();
+		//////////////////////////////////////////////////////////////////////////////////
+		// Constructors:
+		BmnTOF1Detector(); //empty constructor
+		BmnTOF1Detector(int NPlane, int FillHist, TTree *tree);
 
-		BmnTOF1Detector(Int_t NPlane, Int_t FillHistLevel, TTree *tree); // FillHistLevel=0-don"t fill, FillHistLevel=1-fill statistic, FillHistLevel>1-fill all
+		//////////////////////////////////////////////////////////////////////////////////
+		// New functions that I'm using:
+		void SetCorrLR( string pathToFile );		// For single plane of ToF400, sets LR correction
+		void SetStripShift( string pathToFile );	// For single plane of ToF400, sets strip shift
+		void SetWalkFunc( string pathToFile );		// For single plane of ToF400, sets walk functions
+		void SetGammaOffset( string pathToFile );	// For single plane of ToF400, moves gamma peak to correct location
+		void TestPrint( int strip );			// For single plane of ToF400, prints out correction files loaded for given strip
+		void SetGeoFile( string pathToFile );		// For single plane of ToF400, loads geometry file and sets strip centers in global coords
 
-		virtual ~BmnTOF1Detector() {
-		};
+		void ClearHits();
 
-		void Clear();
-
-		// New functions that I'm using
-		void SetCorrLR( string pathToFile );
-		void SetStripShift( string pathToFile );
-		void SetWalkFunc( string pathToFile );
-		void SetCorrTimeShift( string pathToFile );
-		void TestPrint( int strip );
-		void SetGeoFile( string pathToFile );
+		void InitSkim( BmnTof1Digit* tofDigit );
+		void CreateStripHit( BmnTof1Digit* tofDigit , double t0Time , double t0Amp );
+		void ClusterHits();
+		void OutputToTree();
 	
-		// Old functions I'm working to phase out
-		Bool_t SetDigit(BmnTof1Digit *TofDigit);
-		void KillStrip(Int_t NumberOfStrip);
-		Int_t FindHits(BmnTrigDigit *T0);
-		Int_t FindHits(BmnTrigDigit *T0, TClonesArray *TofHit);
-		TList* GetList(Int_t n);
-		TString GetName();
-		Bool_t SetCorrLR(Double_t *Mass);
-		Bool_t SetGeo(BmnTof1GeoUtils *pGeoUtils);
-		Bool_t GetXYZTime(Int_t Str, TVector3 *XYZ, Double_t *ToF);
-		Double_t GetWidth(Int_t Str);
-		Double_t GetTime(Int_t Str);
-		Bool_t SaveHistToFile(TString NameFile);
-
-		Int_t GetFillHistLevel() {
-			return fFillHist;
-		};
+		double GetStripMult(){ return numStripsFired; };
 
 		// OLD FUNCTIONS THAT I HAVE PHASED OUT
 		Bool_t SetCorrLR( TString NameFile ){return kTRUE;};
+		Bool_t SetCorrLR(Double_t *Mass){return kTRUE;};
 		Bool_t SetCorrSlewing( TString NameFile ){return kTRUE;};
 		Bool_t SetCorrTimeShift( TString NameFile ){return kTRUE;};
 		Bool_t SetGeoFile(TString NameFile){return kTRUE;};
+		Bool_t SaveHistToFile(TString NameFile){return kTRUE;};
+		Int_t GetFillHistLevel(){return fFillHist;};
+		void KillStrip(Int_t NumberOfStrip){return;};
+		Bool_t SetGeo(BmnTof1GeoUtils *pGeoUtils){return kTRUE;};
+		Bool_t GetXYZTime(Int_t Str, TVector3 *XYZ, Double_t *ToF){return kTRUE;};
+		Double_t GetWidth(Int_t Str){return 0.;};
+		Double_t GetTime(Int_t Str){return 0.;};
+		Int_t FindHits(BmnTrigDigit *T0){return 0;};
+		Bool_t SetDigit(BmnTof1Digit *TofDigit){return kTRUE;};
+		void Clear(){return;}; // clear all holders for ToF400
+		Int_t FindHits(BmnTrigDigit *T0, TClonesArray *TofHit) {return 0;};
 
+
+		virtual ~BmnTOF1Detector() {}; // deconstructor
 
 		ClassDef(BmnTOF1Detector, 4);
 
