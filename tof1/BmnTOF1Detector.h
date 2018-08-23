@@ -69,8 +69,8 @@ class BmnTOF1Detector {
 		TVector3 fCenterStrip[fNStr];
 
 		// For initial processing
-		double tempHitTime[fNStr][5];
-		double tempHitAmps[fNStr][5];
+		double tempHitTime[fNStr][10];
+		double tempHitAmps[fNStr][10];
 		int tempCounter[fNStr];
 		
 		// For hit matching -- after this, there is
@@ -83,7 +83,7 @@ class BmnTOF1Detector {
 		int fXPos[fNStr];
 		
 		// Storage for how many strips fired after hit matching
-		int stripsFired[fNStr];
+		int stripsFired[fNStr] = { -1 };
 		int numStripsFired;
 
 		// Holder for all possible clusters -- could be up to 48 of them
@@ -92,18 +92,9 @@ class BmnTOF1Detector {
 		double 	final_Amp[fNStr];
 		double 	final_YPos[fNStr];
 		int 	final_XPos[fNStr];
+		TVector3 final_Pos[fNStr];
+		TVector3 tmpVector;
 		
-
-
-		// Old holders that I'm phasing out
-		TVector3 fCrossPoint[fNStr], fVectorTemp;
-		BmnTrigDigit *fT0;
-
-		Double_t CalculateDt(Int_t Str){ return 0.;};
-		Bool_t GetCrossPoint(Int_t NStrip);
-		void AddHit(Int_t Str, TClonesArray *TofHit){return;};
-		void AddConteiner(Int_t Str, TClonesArray *TofHit){ return;};
-
 
 	public:
 		//////////////////////////////////////////////////////////////////////////////////
@@ -125,9 +116,11 @@ class BmnTOF1Detector {
 		void InitSkim( BmnTof1Digit* tofDigit );
 		void CreateStripHit( BmnTof1Digit* tofDigit , double t0Time , double t0Amp );
 		void ClusterHits();
-		void OutputToTree();
+		void OutputToTree(TClonesArray *TofHit);
 	
+		
 		double GetStripMult(){ return numStripsFired; };
+		double GetNClusters(){ return numClusters; };
 
 		// OLD FUNCTIONS THAT I HAVE PHASED OUT
 		Bool_t SetCorrLR( TString NameFile ){return kTRUE;};
@@ -144,7 +137,7 @@ class BmnTOF1Detector {
 		Double_t GetTime(Int_t Str){return 0.;};
 		Int_t FindHits(BmnTrigDigit *T0){return 0;};
 		Bool_t SetDigit(BmnTof1Digit *TofDigit){return kTRUE;};
-		void Clear(){return;}; // clear all holders for ToF400
+		void Clear(){return;};
 		Int_t FindHits(BmnTrigDigit *T0, TClonesArray *TofHit) {return 0;};
 
 

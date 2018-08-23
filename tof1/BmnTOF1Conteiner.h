@@ -16,62 +16,54 @@
 
 #include "TObject.h"
 #include <iostream>
+#include <cmath>
 //------------------------------------------------------------------------------------------------------------------------
 class BmnTOF1Conteiner : public TObject {
-    
-private: 
 
-    Short_t fPlane;
-    Short_t fStrip;
-    Float_t fTimeL;
-    Float_t fTimeR;
-    Float_t fTime;
-    Float_t fWidthL;
-    Float_t fWidthR;
-    Float_t fWidth;
-    Float_t fX;
-    Float_t fY;
-    Float_t fZ;
-    Float_t fTimeT0;
-    Float_t fWidthT0;
+	private: 
+		int fPlane;
+		int fStrip;
+		// fTimeL
+		// fTimeR
+		// fAmpL
+		// fAmpR
 
-public:
-    BmnTOF1Conteiner();
-    BmnTOF1Conteiner(Short_t plane, Short_t strip, Float_t timeL, Float_t timeR, Float_t time, Float_t widthL, Float_t widthR, Float_t width, Float_t x, Float_t y, Float_t z, Float_t timeT0, Float_t widthT0);
-    virtual ~BmnTOF1Conteiner() {};
+		double fTime;
+		double fAmp;
 
-    Short_t GetStrip()      const { return fStrip; }
-    Float_t GetTimeL()     const { return fTimeL; }
-    Float_t GetTimeR()     const { return fTimeR; }
-    Float_t GetTime()       const { return fTime; }
-    Float_t GetWidthL()     const { return fWidthL; }
-    Float_t GetWidthR()     const { return fWidthR; }
-    Float_t GetWidth()      const { return fWidth; }
-    Float_t GetX()       const { return fX; }
-    Float_t GetY()       const { return fY; }
-    Float_t GetZ()       const { return fZ; }
-    Float_t GetTimeT0()       const { return fTimeT0; }
-    Float_t GetWidthT0()     const { return fWidthT0; }
-    
-    void SetParameters(Short_t plane, Short_t strip, Float_t timeL, Float_t timeR, Float_t time, Float_t widthL, Float_t widthR, Float_t width, Float_t x, Float_t y, Float_t z, Float_t timeT0, Float_t widthT0);
-    void SetStrip(Short_t v)      { fStrip = v; }
-    void SetTimeL(Float_t v)      { fTimeL = v; }
-    void SetTimeR(Float_t v)      { fTimeR = v; }
-    void SetTime(Float_t v)       { fTime = v; }
-    void SetWidthL(Float_t v)     { fWidthL = v; }
-    void SetWidthR(Float_t v)     { fWidthR = v; }
-    void SetWidth(Float_t v)      { fWidth = v; }
-    void SetX(Float_t v)          { fX = v; }
-    void SetY(Float_t v)          { fY = v; }
-    void SetZ(Float_t v)          { fZ = v; }
-    void SetTimeT0(Float_t v)     { fTimeT0 = v; }
-    void SetWidthT0(Float_t v)    { fWidthT0 = v; }
-    
-    void Clear();
+		double fX_local;
+		double fY_local;
+		double fZ_local;
+		double fX_glob;
+		double fY_glob;
+		double fZ_glob;
+		double fdL;
 
-    void	print(std::ostream& os = std::cout, const char* comment = nullptr)const;
+	public:
+		BmnTOF1Conteiner();
+		BmnTOF1Conteiner( int plane, int strip, double time, double amp, double x_local, double y_local, double z_local, double x_glob, double y_glob, double z_glob);
+		virtual ~BmnTOF1Conteiner() {};
 
-    ClassDef(BmnTOF1Conteiner, 0);
+		int GetStrip()      	const { return fStrip; }
+		int GetPlane()		const { return fPlane; }
+
+		double GetTime()       	const { return fTime; }
+		double GetAmp()      	const { return fAmp; }
+		double GetXLocal()       	const { return fX_local; }
+		double GetYLocal()       	const { return fY_local; }
+		double GetZLocal()       	const { return fZ_local; }
+		double GetXGlobal()       	const { return fX_glob; }
+		double GetYGlobal()       	const { return fY_glob; }
+		double GetZGlobal()       	const { return fZ_glob; }
+		double GetdL()			const { return fdL; }
+
+		void SetParameters ( int plane, int strip, double time, double amp, double x_local, double y_local, double z_local, double x_glob, double y_glob, double z_glob);
+		
+		void Clear();
+
+		void	print(std::ostream& os = std::cout, const char* comment = nullptr)const;
+
+		ClassDef(BmnTOF1Conteiner, 2);
 };
 
 

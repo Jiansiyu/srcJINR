@@ -33,7 +33,7 @@ void BmnTOF1Detector::SetCorrLR( string pathToFile ) {
 
 	string dir = std::getenv("VMCWORKDIR"); 
 	dir += pathToFile;
-	cout << "TOF400-Setup: Attempting to open LR corr file: " << dir << "\n"; 
+	//cout << "TOF400-Setup: Attempting to open LR corr file: " << dir << "\n"; 
 
 	ifstream f_corr;
 	f_corr.open(dir); 
@@ -49,10 +49,10 @@ void BmnTOF1Detector::SetCorrLR( string pathToFile ) {
 				fCorrLR[St] = Temp; 
 			}
 		} 
-		cout << "\tLoaded LR corr file\n"; 
+		//cout << "\tLoaded LR corr file\n"; 
 	} 
 	else{ 
-		cout << "\tFailed to find LR corr file, setting all corrections to 0...\n"; 
+		cout << "\tFailed to find LR corr file, setting all corrections to 0...\n";
 	}  
 }
 
@@ -63,7 +63,7 @@ void BmnTOF1Detector::SetStripShift( string pathToFile ) {
 	
 	string dir = std::getenv("VMCWORKDIR"); 
 	dir += pathToFile;
-	cout << "TOF400-Setup: Attempting to open strip shift file: " << dir << "\n"; 
+	//cout << "TOF400-Setup: Attempting to open strip shift file: " << dir << "\n"; 
 	
 	ifstream f_corr;
 	f_corr.open(dir); 
@@ -82,7 +82,7 @@ void BmnTOF1Detector::SetStripShift( string pathToFile ) {
 					fKilled[St] = true;
 			}
 		}
-		cout << "\tLoaded strip shift file\n";
+		//cout << "\tLoaded strip shift file\n";
 	}
 	else{
 		cout << "\tFailed to find strip shift file, setting all corrections to 0...\n";
@@ -96,7 +96,7 @@ void BmnTOF1Detector::SetWalkFunc( string pathToFile ) {
 	
 	string dir = std::getenv("VMCWORKDIR"); 
 	dir += pathToFile;
-	cout << "TOF400-Setup: Attempting to open strip walk-function file: " << dir << "\n"; 
+	//cout << "TOF400-Setup: Attempting to open strip walk-function file: " << dir << "\n"; 
 	
 	ifstream f_corr;
 	f_corr.open(dir); 
@@ -119,7 +119,7 @@ void BmnTOF1Detector::SetWalkFunc( string pathToFile ) {
 					fKilled[St] = true;
 			}
                 }
-                cout << "\tLoaded time walk file\n";
+                //cout << "\tLoaded time walk file\n";
         }
         else{
                 cout << "\tFailed to find time walk file, setting all corrections to 0...\n";
@@ -192,7 +192,7 @@ void BmnTOF1Detector::ClearHits(){
 	memset( fYPos, 0, sizeof(fYPos));
 	memset( fXPos, 0, sizeof(fXPos));	
 
-	memset( stripsFired, 0, sizeof(stripsFired));
+	memset( stripsFired, -1, sizeof(stripsFired));
 	numStripsFired = 0;
 
 	numClusters = 0;
@@ -200,10 +200,11 @@ void BmnTOF1Detector::ClearHits(){
 	memset( final_Amp, 0, sizeof(final_Amp));
 	memset( final_YPos, 0, sizeof(final_YPos));
 	memset( final_XPos, 0, sizeof(final_XPos));
-
-	// Still phasing out
+	
+	tmpVector.SetXYZ(0.,0.,0.);
 	for (Int_t i = 0; i < fNStr; i++)
-		fCrossPoint[i].SetXYZ(0., 0., 0.);
+		final_Pos[i].SetXYZ(0.,0.,0.);
+		
 }
 
 void BmnTOF1Detector::InitSkim( BmnTof1Digit* tofDigit ){
@@ -219,7 +220,7 @@ void BmnTOF1Detector::InitSkim( BmnTof1Digit* tofDigit ){
 	if( side == 1) 			return;
 
 	if( side == 0){ // store info only for LH side 
-		if(  tempCounter[strip] > 4 ){
+		if(  tempCounter[strip] > 9 ){
 			cerr << "Array not large enough, skipping this entry...\n";
 			return;
 		}
@@ -249,26 +250,36 @@ void BmnTOF1Detector::CreateStripHit( BmnTof1Digit* tofDigit , double t0Time , d
 			double tmpT = tempHitTime[strip][hit];
 			double tmpA = tempHitAmps[strip][hit];
 
+			//cout << tmpT << " " << tofT << "\n"
+			//	<< tmpA << " " << tofAmp << "\n"
+			//	<< strip << "\n";
+
 			if( fabs( (1./0.06)*(tmpT - tofT + fCorrLR[strip]) ) < 32 ){
+				double par0 = fWalkFunc[strip][1];
+				double par1 = fWalkFunc[strip][2];
+				double par2 = fWalkFunc[strip][3];
+				double shift = fWalkFunc[strip][0];
 				double meanTime = (tmpT + tofT + fCorrLR[strip])*0.5;
 				double sumAmps = sqrt(tmpA * tofAmp);
 				double pos = 0.5*(1./0.06)*(tmpT - tofT + fCorrLR[strip]); // +/- 15cm
+		
+				double fixWalk = par0 + par1*exp( -(sumAmps - shift) / par2 );
+				if( par0 == -1 || par1 == -1 || par2 == -1 || shift == -1) fixWalk = 0;
+				meanTime = meanTime - t0Time + (-6.1 + 27./sqrt(t0Amp) ) - fStripShift[strip] - fixWalk;
+				//cout << "\tcompare to saved tof: " << meanTime << " " << fTof[strip] << " " << fFlagHit[strip] << "\n";
+
+				
 				if( sumAmps < 9 ) return; // I don't want hits with low amplitude
 
 				if( ( fFlagHit[strip] == false) || ( fFlagHit[strip] == true && meanTime < fTof[strip] ) ){
-
-					double par0 = fWalkFunc[strip][1];
-					double par1 = fWalkFunc[strip][2];
-					double par2 = fWalkFunc[strip][3];
-					double shift = fWalkFunc[strip][0];
-	
-					double fixWalk = par0 + par1*exp( -(sumAmps - shift) / par2 );
-					fTof[strip] = meanTime - t0Time + (-6.1 + 27./sqrt(t0Amp) ) - fStripShift[strip] - fixWalk;
+					fTof[strip] = meanTime;
 					fAmp[strip] = sumAmps;
 					fYPos[strip] = pos;
 					fXPos[strip] = strip;
 					fFlagHit[strip] = true;
+					//cout << "\tmatched: " << fTof[strip] << " " << fAmp[strip] << " " <<  fYPos[strip] << " " << fXPos[strip] << " " <<  fFlagHit[strip] << "\n";
 
+					int *result = std::find(std::begin(stripsFired), std::end(stripsFired), strip);
 					if( std::find( std::begin(stripsFired) , std::end(stripsFired) , strip) == std::end(stripsFired) ){
 						stripsFired[numStripsFired] = strip;
 						numStripsFired++;
@@ -298,7 +309,7 @@ void BmnTOF1Detector::ClusterHits(){
 	std::sort( firedStrips.begin() , firedStrips.end() );
 	
 		// Print option:
-	//cout << "Need to consider clustering for # strips: " << numStripsFired << "\n\tstrips: ";
+	//acout << "Need to consider clustering for # strips: " << numStripsFired << "\n\tstrips: ";
 	//for( int i = 0 ; i < numStripsFired ; i++)
 	//	cout << firedStrips.at(i) << " ";
 	//cout << "\n";
@@ -311,6 +322,11 @@ void BmnTOF1Detector::ClusterHits(){
 		final_Amp[numClusters] = fAmp[strip];
 		final_YPos[numClusters] = fYPos[strip];
 		final_XPos[numClusters] = fXPos[strip];
+		
+			// Create global position for the strip
+		tmpVector.SetXYZ(0., fYPos[strip], 0.);
+		final_Pos[numClusters] = fCenterStrip[strip] + tmpVector;
+		
 		numClusters++;
 	}
 	else{
@@ -328,6 +344,10 @@ void BmnTOF1Detector::ClusterHits(){
 				double tDiff 	= fTof[stOne] - fTof[stTwo];
 				double yDiff 	= fYPos[stOne] - fYPos[stTwo];
 				int xDiff 	= fXPos[stOne] - fXPos[stTwo];
+				//cout << fTof[stOne] << " " << fTof[stTwo] << "\n"
+				//	<< fYPos[stOne] << " " << fYPos[stTwo] << "\n"
+				//	<< fXPos[stOne] << " " << fXPos[stTwo] << "\n"
+				//	<< fAmp[stOne] << " " << fAmp[stTwo] << "\n";
 				if( (fabs( tDiff ) > 2) || (fabs( yDiff ) > 7) || (fabs( xDiff ) > 6) ){}
 				else{
 					clusterList[stOne].push_back( stTwo );
@@ -405,6 +425,11 @@ void BmnTOF1Detector::ClusterHits(){
 			final_Amp[numClusters] = sumCharge / result.at(group).size();
 			final_YPos[numClusters] = weightPos / sumCharge;
 			final_XPos[numClusters] = repStrip;
+			
+				// Create global position for the strip
+			tmpVector.SetXYZ(0., weightPos / sumCharge, 0.);
+			final_Pos[numClusters] = fCenterStrip[repStrip] + tmpVector;
+			
 			numClusters++;
 			
 		}
@@ -416,24 +441,25 @@ void BmnTOF1Detector::ClusterHits(){
 
 //----------------------------------------------------------------------------------------
 
-void BmnTOF1Detector::OutputToTree(){}
+void BmnTOF1Detector::OutputToTree(TClonesArray *TofHit){
+
+	// For all the cluster strips we have, add them all to a branch
+	for( int clust = 0 ; clust < numClusters ; clust++){
+		new((*TofHit)[TofHit->GetEntriesFast()]) BmnTOF1Conteiner(
+				fNPlane,
+				final_XPos[clust],
+				final_Tof[clust],
+				final_Amp[clust],
+				final_XPos[clust],
+				final_YPos[clust],
+				0,
+				final_Pos[clust].x(),
+				final_Pos[clust].y(),
+				final_Pos[clust].z()
+				);
+
+	}
+}
 
 
 //------------------------------------------------------------------------------------------------------------------------
-Bool_t BmnTOF1Detector::GetCrossPoint(Int_t NStrip = 0) {
-	/*
-	fVectorTemp.SetXYZ(0., 0., 0.);
-	if (TMath::Abs((fTimeL[NStrip] - fTimeR[NStrip]) * 0.5) >= fMaxDelta)
-		return kFALSE; // estimated position out the strip edge.
-	double dL = (fTimeL[NStrip] - fTimeR[NStrip]) * 0.5 / fSignalVelocity;
-	fVectorTemp(0) = 0;
-	fVectorTemp(1) = dL;
-	fVectorTemp(2) = 0; //TMP ALIGMENT CORRECTIONS
-	fCrossPoint[NStrip] = fCenterStrip[NStrip] + fVectorTemp;
-	//    cout << "Z = " << fCrossPoint[NStrip].Z() << endl;
-	*/
-	return kTRUE;
-}
-
-//----------------------------------------------------------------------------------------
-

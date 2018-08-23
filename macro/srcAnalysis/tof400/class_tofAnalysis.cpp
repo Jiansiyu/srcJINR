@@ -31,6 +31,7 @@
 #include "BmnTrigDigit.h"
 #include "BmnTof1Digit.h"
 #include "BmnTOF1Detector.h"
+#include "BmnTOF1Conteiner.h"
 #include "UniDbRun.h"
 
 
@@ -66,11 +67,18 @@ int main(int argc, char ** argv)
 
 	TString hName;
 	TH1D ** hStripMult      = new TH1D*[20];
+	TH1D ** hClusterMult	= new TH1D*[20];
 	for( int pl = 0 ; pl < 20 ; pl++){
 		hName = Form("hStripMult_%i",pl);
 		hStripMult[pl]          = new TH1D(hName,hName,40,0,20);
+		hName = Form("hClusterMult_%i",pl);
+		hClusterMult[pl]        = new TH1D(hName,hName,40,0,20);
 	}
 
+	TFile * outFile = new TFile("CLASStofevents.root","RECREATE");
+	TTree * outTree = new TTree("sk","sk");
+	TClonesArray * tofHits = new TClonesArray("BmnTOF1Conteiner");
+	outTree->Branch("tof400",&tofHits);
 
 	////////////////////////////////////////////////////////////////////////////
 	// Init BmnTOF1Detector and load calibration files and geometry
@@ -97,6 +105,7 @@ int main(int argc, char ** argv)
 	////////////////////////////////////////////////////////////////////////////
 	// Loop over files in arguments provided
 	const int files = argc - 1;
+
 	for( int fi = 0 ; fi < files ; ++fi){
 
 		////////////////////////////////////////////////////////////////////////////
@@ -150,18 +159,22 @@ int main(int argc, char ** argv)
 		intree->SetBranchAddress("T0"           ,&t0Data);
 		TClonesArray * tofData  = new TClonesArray("BmnTof1Digit");
 		intree->SetBranchAddress("TOF400"       ,&tofData);
+
 		
 		const int nEvents = intree->GetEntries();
 		cout << "Working on file " << argv[fi+1] << " with " << nEvents << " events and field voltage " << field_voltage << "\n";
-		
 		////////////////////////////////////////////////////////////////////////////
 		// Loop over all events in file
 		for (int event=0 ; event<nEvents ; event++){
+			//if( event > 1000) break;
+
 			timer = std::clock();
 			bc1Data->Clear();
 			bc2Data->Clear();
 			bc3Data->Clear();
 			bc4Data->Clear();
+	
+			tofHits->Clear();
 			
 			intree->GetEvent(event);
 			loadEvent+= ( std::clock() - timer );
@@ -177,7 +190,7 @@ int main(int argc, char ** argv)
 			////////////////////////////////////////////////////////////////////////////
 			// Demand that BC1-BC2 is within Carbon Peak
 			timer = std::clock();
-			bool pass;
+			bool pass = false;
 			skimForCarbon( bc1Data, bc2Data, t0Time, carbonInfo, pass );
 			if (!pass) continue;
 			skimCarbon_time+= ( std::clock() - timer );
@@ -206,13 +219,34 @@ int main(int argc, char ** argv)
 				Plane[ signal->GetPlane() ]->CreateStripHit( signal , t0Time , t0Amp );
 			}
 			tofCreateHit_time+= ( std::clock() - timer );
+
+			
 			
 			for( int pl = 0 ; pl < 20 ; pl ++){
 				int stripMult = Plane[pl]->GetStripMult();
-				if( stripMult > 0)	 hStripMult[pl]->Fill(stripMult);
+				if( stripMult == 0) continue;
+				hStripMult[pl]->Fill(stripMult);
+
+					// Cluster the strips in a plane
 				Plane[pl]->ClusterHits( );
+				int clustMult = Plane[pl]->GetNClusters();
+				hClusterMult[pl]->Fill( clustMult );
+
+					// Output hit information to a TClonesArray
+				Plane[pl]->OutputToTree( tofHits );
 			}
-	
+
+			/*
+			for( int hits = 0 ; hits < tofHits->GetEntriesFast() ; hits++){
+				BmnTOF1Conteiner * entry = (BmnTOF1Conteiner *)tofHits->At(hits);
+				cout << entry->GetXGlobal() << " " << entry->GetYGlobal() << " " << entry->GetZGlobal() << "\n";
+				cout << entry->GetXLocal() << " " << entry->GetYLocal() << " " << entry->GetZLocal() << "\n";
+				cout << entry->GetStrip() << " " << entry->GetPlane() << " " << entry->GetTime() << " " << entry->GetAmp() << "\n";
+				cout << entry->GetdL() << "\n\n";
+			}
+			*/
+				// Fill output tree with the TClonesArray info from ToF400
+			outTree->Fill();
 
 		} // end of loop over events in file
 
@@ -227,15 +261,17 @@ int main(int argc, char ** argv)
 	tofInitSkim_time = tofInitSkim_time / (double) CLOCKS_PER_SEC;
 	tofCreateHit_time = tofCreateHit_time / (double) CLOCKS_PER_SEC;
 
-	cout << "Total Time: " << totTime << "\n"
-		<< "\t" << loadEvent << " " << loadT0time << " " << skimCarbon_time << "\n\t" << 
-		tofClear_time << " " << tofInitSkim_time << " " << tofCreateHit_time << "\n";
+	//cout << "Total Time: " << totTime << "\n"
+	//	<< "\t" << loadEvent << " " << loadT0time << " " << skimCarbon_time << "\n\t" << 
+	//	tofClear_time << " " << tofInitSkim_time << " " << tofCreateHit_time << "\n";
 	
 
-	TFile * outFile = new TFile("CLASStofevents.root","RECREATE");
 	outFile->cd();
-	for( int pl = 0; pl < 20; pl++)
+	for( int pl = 0; pl < 20; pl++){
 		hStripMult[pl]->Write();
+		hClusterMult[pl]->Write();
+	}
+	outTree->Write();
 	outFile->Write();
 	outFile->Close();
 	
@@ -312,7 +348,7 @@ void skimForCarbon( TClonesArray *bc1Data, TClonesArray *bc2Data, double t0Time,
 	double BC1_CWidth = cuts.at(2);
 	double BC2_CPeak = cuts.at(1);
 	double BC2_CWidth = cuts.at(3);
-	if(  ( fabs( adcBC1 - (BC1_CPeak-pedBC1) ) < 2*BC1_CWidth ) && ( fabs( adcBC2 - (BC2_CPeak-pedBC2) ) > 2*BC2_CWidth )   )
+	if(  ( fabs( adcBC1 - (BC1_CPeak-pedBC1) ) < 2*BC1_CWidth ) && ( fabs( adcBC2 - (BC2_CPeak-pedBC2) ) < 2*BC2_CWidth )   )
 		pass = true;
 }
 

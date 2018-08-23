@@ -299,10 +299,9 @@ int main(int argc, char ** argv)
 		intree->SetBranchAddress("T0"		,&t0Data);
 		// ToF400 Branches
 		intree->SetBranchAddress("TOF400"	,&tofData);
-
 		// Loop over events
 		for (int event=0 ; event<nEvents ; event++){
-
+			//if( event > 1000) break;
 
 			double adcBC1 = 0;
 			double adcBC2 = 0;
@@ -324,7 +323,6 @@ int main(int argc, char ** argv)
 			BmnTrigDigit * t0Signal = (BmnTrigDigit*) t0Data->At(0);
 			double t0Time = t0Signal->GetTime();
 			double t0Amp  = t0Signal->GetAmp();
-
 
 			if( bc1Data->GetEntriesFast() ){
 				int bc1Idx;
@@ -349,7 +347,6 @@ int main(int argc, char ** argv)
 			std::vector<int> stripsFired[20];
 			std::vector<double> hitInfoTime[20][48];
 			std::vector<double> hitInfoAmps[20][48];
-
 			for( int en = 0 ; en < tofData->GetEntriesFast() ; en++ ){ // Loop through the events once and store left side info
 				BmnTof1Digit * signal = (BmnTof1Digit*) tofData->At(en);
 				int plane = signal->GetPlane();
@@ -357,6 +354,7 @@ int main(int argc, char ** argv)
 				int side = signal->GetSide();
 				double tofT = signal->GetTime();
 				double tofAmp = signal->GetAmplitude();
+
 				if( plane < 0 || plane > 19) continue;
 				if( strip < 0 || strip > 47) continue;
 				if( killStrip[plane][strip] == true) continue;
@@ -385,28 +383,35 @@ int main(int argc, char ** argv)
 					for( int hit = 0 ; hit < hitInfoTime[plane][strip].size() ; hit++){
 						double tmpT = hitInfoTime[plane][strip].at(hit);
 						double tmpA = hitInfoAmps[plane][strip].at(hit);
+						//cout << tmpT << " " << tofT << "\n"
+                                		//	<< tmpA << " " << tofAmp << "\n"
+						//	<< strip << "\n";
 
 						if( fabs( (1./0.06)*(tmpT - tofT + corrLR[plane][strip]) ) < 32 ){ // Create a valid strip hit
+							double par0 = walkFunc[plane][strip][1];
+							double par1 = walkFunc[plane][strip][2];
+							double par2 = walkFunc[plane][strip][3];
+							double shift = walkFunc[plane][strip][0];
 							double meanTime = (tmpT + tofT + corrLR[plane][strip])*0.5;
 							double sumAmps = sqrt(tmpA * tofAmp);
 							double pos = 0.5*(1./0.06)*(tmpT - tofT + corrLR[plane][strip]); // +/- 15cm
+													
+							meanTime = meanTime - t0Time + (-6.1 + 27./sqrt(t0Amp) ) - stripShift[plane][strip] - fixWalk(sumAmps, shift, par0, par1, par2);
+							//cout << "\tcompare to saved tof: " << meanTime << " " << tofEvents[plane][strip].t << " " << tofEvents[plane][strip].hit << "\n";
 
 							if( sumAmps < 9 ) continue; // I don't want hits with low amplitude					
 
 							// If there was already a created hit for this strip, only take the earliest one
 							// so there will only be one hit per strip allowed
 							if( (tofEvents[plane][strip].hit == false) || (tofEvents[plane][strip].hit == true && meanTime < tofEvents[plane][strip].t) ){
-								double par0 = walkFunc[plane][strip][1];
-								double par1 = walkFunc[plane][strip][2];
-								double par2 = walkFunc[plane][strip][3];
-								double shift = walkFunc[plane][strip][0];
 
-								tofEvents[plane][strip].t = meanTime - t0Time + (-6.1 + 27./sqrt(t0Amp) ) - stripShift[plane][strip] - fixWalk(sumAmps, shift, par0, par1, par2);
+								tofEvents[plane][strip].t = meanTime;
 								tofEvents[plane][strip].a = sumAmps;
 								tofEvents[plane][strip].y = pos;
-								tofEvents[plane][strip].hit == true;
+								tofEvents[plane][strip].hit = true;
 								tofEvents[plane][strip].st = strip;
 								
+								//cout << "\tmatched: " << meanTime << " " << sumAmps << " " << pos << " " << strip << " " << tofEvents[plane][strip].hit << "\n";
 								// only save a strip once -- enforce that a strip can only have one hit
 								if( std::find( stripsFired[plane].begin() , stripsFired[plane].end() , strip) == stripsFired[plane].end())
 									stripsFired[plane].push_back( strip );
@@ -426,7 +431,6 @@ int main(int argc, char ** argv)
 				if( stripsFired[pl].size() == 0) continue;
 				planesFired++;
 				hStripMult[pl]->Fill( stripsFired[pl].size() );
-
 					// Sort the strips that have fired
 				std::sort( stripsFired[pl].begin() , stripsFired[pl].end() );
 				
@@ -468,6 +472,11 @@ int main(int argc, char ** argv)
 							hyDiff_yPos[pl]->Fill( one.y , two.y );
 							htDiff_tPos[pl]->Fill( one.t , two.t );
 	
+							//cout << one.t << " " << two.t << "\n"
+							//	<< one.y << " " << two.y << "\n"
+							//	<< one.st << " " << two.st << "\n"
+							//	<< one.a << " " << two.a << "\n";
+
 								// Don't need to categorize strips that fall outside because
 								// automatically clustered as single-strips in my clusterList
 							if( (fabs( one.t - two.t ) > 2) || (fabs( one.y - two.y ) > 7) || (fabs( one.st - two.st ) > 6) ){
@@ -575,6 +584,7 @@ int main(int argc, char ** argv)
 	outFile->cd();
 	hPlaneMult->Write();
 	for( int pl = 0 ; pl < 20 ; pl++){
+
 		hStripMult[pl]->Write();
 
 		hxDiff[pl]->Write();
@@ -600,7 +610,7 @@ int main(int argc, char ** argv)
 	}
 	outFile->Write();
 	outFile->Close();
-	
+
 	return 0;
 }
 

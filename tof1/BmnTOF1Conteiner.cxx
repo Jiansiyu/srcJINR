@@ -9,65 +9,78 @@
 //--------------------------------------------------------------------------------------------------------------------------------------
 BmnTOF1Conteiner::BmnTOF1Conteiner()
 {
-    //Clear();
+	//Clear();
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
-BmnTOF1Conteiner::BmnTOF1Conteiner(Short_t plane, Short_t strip, Float_t timeL, Float_t timeR, Float_t time, Float_t widthL, Float_t widthR, Float_t width, Float_t x, Float_t y, Float_t z, Float_t timeT0, Float_t widthT0)
+BmnTOF1Conteiner::BmnTOF1Conteiner( int plane, int strip, double time, double amp, double x_local, double y_local, double z_local, double x_glob, double y_glob, double z_glob)
 {
-    fPlane = plane;
-    fStrip = strip;
-    fTimeL = timeL;
-    fTimeR = timeR;
-    fTime = -time;
-    fWidthL = widthL;
-    fWidthR = widthR;
-    fWidth = width;
-    fX = x;
-    fY = y;
-    fZ = z;
-    fTimeT0 = timeT0;
-    fWidthT0 = widthT0;
+	fPlane = plane;
+	fStrip = strip;
+	// fTimeL
+	// fTimeR
+	// fAmpL
+	// fAmpR
+
+	fTime = time;
+	fAmp = amp;
+
+	fX_local = x_local;
+	fY_local = y_local;
+	fZ_local = z_local;
+	fX_glob = x_glob;
+	fY_glob = y_glob;
+	fZ_glob = z_glob;
+	
+	fdL = sqrt( pow(fX_glob,2) + pow(fY_glob,2) + pow(fZ_glob,2) );
 }
 
-void BmnTOF1Conteiner::SetParameters (Short_t plane, Short_t strip, Float_t timeL, Float_t timeR, Float_t time, Float_t widthL, Float_t widthR, Float_t width, Float_t x, Float_t y, Float_t z, Float_t timeT0, Float_t widthT0)
+void BmnTOF1Conteiner::SetParameters ( int plane, int strip, double time, double amp, double x_local, double y_local, double z_local, double x_glob, double y_glob, double z_glob)
 {
-    fPlane = plane;
-    fStrip = strip;
-    fTimeL = timeL;
-    fTimeR = timeR;
-    fTime = -time;
-    fWidthL = widthL;
-    fWidthR = widthR;
-    fWidth = width;
-    fX = x;
-    fY = y;
-    fZ = z;
-    fTimeT0 = timeT0;
-    fWidthT0 = widthT0;    
+	fPlane = plane;
+	fStrip = strip;
+	// fTimeL
+	// fTimeR
+	// fAmpL
+	// fAmpR
+
+	fTime = time;
+	fAmp = amp;
+
+	fX_local = x_local;
+	fY_local = y_local;
+	fZ_local = z_local;
+	fX_glob = x_glob;
+	fY_glob = y_glob;
+	fZ_glob = z_glob;
+
+	fdL = sqrt( pow(fX_glob,2) + pow(fY_glob,2) + pow(fZ_glob,2) );
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 void	BmnTOF1Conteiner::print( std::ostream& os, const char* comment)const
 {
 	os<<" [BmnTof1Digit] "; if(nullptr != comment) os<<comment;
-	os<<"  detID: "<<fPlane<<", stripID: "<<fStrip<<", Time: "<<fTime<<", Width: "<<fWidth<<std::endl;
+	os<<"  detID: "<<fPlane<<", stripID: "<<fStrip<<", Time: "<<fTime<<", Width: "<<fAmp<<std::endl;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 void	BmnTOF1Conteiner::Clear()
 {
-    fPlane = -1;
-    fStrip = -1;
-    fTimeL = -1;
-    fTimeR = -1;
-    fTime = -1;
-    fWidthL = -1;
-    fWidthR = -1;
-    fWidth = -1;
-    fX = -1000;
-    fY = -1000;
-    fZ = -1000;
-    fTimeT0 = -1;
-    fWidthT0 = -1;
+	fPlane = -1;
+	fStrip = -1;
+	// fTimeL
+	// fTimeR
+	// fAmpL
+	// fAmpR
+
+	fTime = -1;
+	fAmp = -1;
+
+	fX_local = -1000;
+	fY_local = -1000;
+	fZ_local = -1000;
+	fX_glob = -1000;
+	fY_glob = -1000;
+	fZ_glob = -1000;
 }
 //
 ClassImp(BmnTOF1Conteiner)
-        
+
