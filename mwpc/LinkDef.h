@@ -19,4 +19,6 @@
 #pragma link C++ class  BmnMwpcGeoPar+;
 #pragma link C++ class  BmnMwpcPoint+;
 
+#pragma link C++ class  BmnMWPCDetector;
+
 #endif

@@ -2,4 +2,5 @@
 add_subdirectory(checkFile)
 add_subdirectory(t0TimeRes)
 add_subdirectory(tof400)
+add_subdirectory(tof_mwpc)
 #add_subdirectory(trigAndTof)

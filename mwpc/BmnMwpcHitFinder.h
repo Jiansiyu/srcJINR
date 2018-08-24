@@ -58,7 +58,7 @@ public:
   virtual InitStatus Init();
 
   /** Virtual method Exec **/
-  virtual void Exec(Option_t* opt);
+  virtual void Exec(Option_t* opt,  TClonesArray* fBmnMwpcDigitArray, TClonesArray* fBmnMwpcSegmentsArray, UInt_t evHead);
 
   /** Virtual method Finish **/
   virtual void Finish();
@@ -74,9 +74,9 @@ private:
   TString fBmnEventHeaderBranchName;
 
   /** Input array of MWPC digits **/
-  TClonesArray* fBmnMwpcDigitArray;
+  //TClonesArray* fBmnMwpcDigitArray;
   /** Output array of MWPC hits **/
-  TClonesArray* fBmnMwpcSegmentsArray; 
+  //TClonesArray* fBmnMwpcSegmentsArray; 
   TClonesArray* fBmnMwpcEventHeader;
 
   TString fOutputFileName;

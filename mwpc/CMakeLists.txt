@@ -41,6 +41,7 @@ BmnMwpcContFact.cxx
 BmnMwpcGeo.cxx
 BmnMwpcGeoPar.cxx
 BmnMwpcPoint.cxx
+BmnMWPCDetector.cxx
 )
 
 Set(HEADERS)
