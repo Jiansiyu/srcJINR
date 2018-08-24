@@ -48,7 +48,7 @@ public:
 
     virtual InitStatus Init();
 
-    virtual void Exec(Option_t* opt);
+    virtual void Exec(Option_t* opt, TClonesArray* fBmnMwpcSegmentsArray, TClonesArray* fBmnMwpcTracksArray);
 
     virtual void Finish();
 
@@ -65,11 +65,11 @@ private:
     TString fOutputFileName;
    
     /** Input array of MWPC hits **/
-    TClonesArray* fBmnMwpcSegmentsArray;
+    //TClonesArray* fBmnMwpcSegmentsArray;
     
     /** Output array of MWPC tracks **/
-    TClonesArray* fBmnMwpcTracksArray; 
-    TClonesArray* fBmnMwpcTracksArrayToDC; 
+    //TClonesArray* fBmnMwpcTracksArray; 
+    //TClonesArray* fBmnMwpcTracksArrayToDC; 
     
     BmnMwpcGeometrySRC* fMwpcGeo;
 

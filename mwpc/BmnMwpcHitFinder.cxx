@@ -391,9 +391,9 @@ void BmnMwpcHitFinder::Exec(Option_t* opt, TClonesArray* fBmnMwpcDigitArray, TCl
 	vector<Double_t>vtmpClust;
 
 
-	for (Int_t iChamber = 0; iChamber < kNChambers; iChamber++) {
+	for (Int_t iChamber = 0; iChamber < kNChambers; iChamber++) { // For each chamber of MWPC
 		for (Int_t ise = 0; ise < Nbest_seg[iChamber]; ise++) {
-			if (Nhits_seg[iChamber][ise]  > 3) {
+			if (Nhits_seg[iChamber][ise]  > 3) { // If I had more than 3 hits per segment,
 
 				BmnMwpcSegment *pSeg = new ((*fBmnMwpcSegmentsArray)[fBmnMwpcSegmentsArray->GetEntriesFast()]) BmnMwpcSegment();
 				//	BmnMwpcTrack *pSeg = new ((*fBmnMwpcSegmentsArray)[fBmnMwpcSegmentsArray->GetEntriesFast()]) BmnMwpcTrack();
