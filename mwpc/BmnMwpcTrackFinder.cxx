@@ -876,7 +876,7 @@ InitStatus BmnMwpcTrackFinder::Init() {
 
 	kMinHits = 4;
 	kChi2_Max = 20.;
-	kmaxPairs = 1;//10;
+	kmaxPairs = 10;//10;
 
 	dw = fMwpcGeo->GetWireStep();//0.25; // [cm] // wires step
 	dw_half = 0.5*dw;

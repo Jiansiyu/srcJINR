@@ -45,7 +45,12 @@ const double pedBC2 = -11.7212;
 const double pedBC3 = -25.4808;
 const double pedBC4 = 126.067;
 const int run_period = 7;
-
+const double a_out = 0.00173144;
+const double b_out = 0.0384856;
+const double c_out = 0.000015362;
+const double a_in = 0.020542;
+const double b_in = 0.0305108;
+const double c_in = 0.0000114953;
 
 
 using namespace std;
@@ -53,8 +58,10 @@ using namespace std;
 double GrabField(TString run_number, const int period);
 void checkQC( TString run_number, std::vector<double> *cuts );
 void loadT0( TClonesArray *t0, double &time, double &amp);
-void skimForCarbon( TClonesArray *bc1Data, TClonesArray *bc2Data, double t0Time, std::vector<double> cuts, bool &pass );
+void skimForCarbon( TClonesArray *bc1Data, TClonesArray *bc2Data, double t0Time, std::vector<double> cuts, bool &pass , double &z2);
+void grabZ2( TClonesArray *bc3Data, TClonesArray *bc4Data, double t0Time, double &z2);
 void findIdx( TClonesArray* data, int &index , double refT);
+
 
 int main(int argc, char ** argv)
 {
@@ -72,6 +79,7 @@ int main(int argc, char ** argv)
 	TH1D * hXdiff	= new TH1D("hXdiff","hXdiff",4000,-20,20);
 	TH1D * hYdiff	= new TH1D("hYdiff","hYdiff",4000,-20,20);
 	TH1D * hZdiff	= new TH1D("hZdiff","hZdiff",4000,-20,20);
+	TH1D * hChi2	= new TH1D("hChi2","hChi2",200,0,20);
 	TH1D ** hStripMult      = new TH1D*[20];
 	TH1D ** hClusterMult	= new TH1D*[20];
 	for( int pl = 0 ; pl < 20 ; pl++){
@@ -86,9 +94,12 @@ int main(int argc, char ** argv)
 	TClonesArray * tofHits 		= new TClonesArray("BmnTOF1Conteiner");
 	TClonesArray * mwpcSegs 	= new TClonesArray("BmnMwpcSegment");
 	TClonesArray * mwpcTracks	= new TClonesArray("BmnTrack");
+	double z2_in, z2_out;
 	outTree->Branch("tof400"	,&tofHits);
 	outTree->Branch("mwpc_sg"	,&mwpcSegs);
 	outTree->Branch("mwpc_tr"	,&mwpcTracks);
+	outTree->Branch("z2_in"		,&z2_in);
+	outTree->Branch("z2_out"	,&z2_out);
 
 	////////////////////////////////////////////////////////////////////////////
 	// Init BmnTOF1Detector and load calibration files and geometry
@@ -181,6 +192,7 @@ int main(int argc, char ** argv)
 		////////////////////////////////////////////////////////////////////////////
 		// Loop over all events in file
 		for (int event=0 ; event<nEvents ; event++){
+			if( (event % 5000) == 0) cout<< "Working on event " << event << "\n";
 				// Input branches
 			bc1Data->Clear();
 			bc2Data->Clear();
@@ -205,8 +217,13 @@ int main(int argc, char ** argv)
 			////////////////////////////////////////////////////////////////////////////
 			// Demand that BC1-BC2 is within Carbon Peak
 			bool pass = false;
-			skimForCarbon( bc1Data, bc2Data, t0Time, carbonInfo, pass );
+			skimForCarbon( bc1Data, bc2Data, t0Time, carbonInfo, pass , z2_in);
 			if (!pass) continue;
+
+			////////////////////////////////////////////////////////////////////////////
+			// Look at BC3-BC4 distribution
+			grabZ2( bc3Data, bc4Data, t0Time, z2_out);
+	
 
 			////////////////////////////////////////////////////////////////////////////
 			// Now process ToF400 digits
@@ -243,7 +260,7 @@ int main(int argc, char ** argv)
 			for( int hits = 0 ; hits < tofHits->GetEntriesFast() ; hits++){
 				BmnTOF1Conteiner * entry = (BmnTOF1Conteiner *)tofHits->At(hits);
 				cout << entry->GetXGlobal() << " " << entry->GetYGlobal() << " " << entry->GetZGlobal() << "\n";
-				cout << entry->GetXLocal() << " " << entry->GetYLocal() << " " << entry->GetZLocal() << "\n";
+				cout << ntry->GetXLocal() << " " << entry->GetYLocal() << " " << entry->GetZLocal() << "\n";
 				cout << entry->GetStrip() << " " << entry->GetPlane() << " " << entry->GetTime() << " " << entry->GetAmp() << "\n";
 				cout << entry->GetdL() << "\n\n";
 			}
@@ -253,27 +270,12 @@ int main(int argc, char ** argv)
 			// Now process MWPC digits
 			mwpcHM->Exec("",mwpcData,mwpcSegs, event);
 			mwpcTF->Exec("",mwpcSegs,mwpcTracks);
-			for( int sg1 = 0 ; sg1 < mwpcSegs->GetEntriesFast() ; sg1++){
-				for( int sg2 = 0 ; sg2 < mwpcSegs->GetEntriesFast() ; sg2++){
-					if( sg2 <= sg1 ) continue;
-					BmnMwpcSegment * thisSeg1 = (BmnMwpcSegment *) mwpcSegs->At(sg1);
-					BmnMwpcSegment * thisSeg2 = (BmnMwpcSegment *) mwpcSegs->At(sg2);
-					
-					FairTrackParam * par1 = (FairTrackParam *) thisSeg1->GetParamFirst();
-					FairTrackParam * par2 = (FairTrackParam *) thisSeg2->GetParamFirst();
-
-					if( (par1->GetZ() + 650 < -150) && (par2->GetZ() + 650 < -150) ){ // both of these segments are from the first MWPC chamber
-						// Look at deltaX, deltaY between the two tracks
-						hXdiff->Fill( par1->GetX() - par2->GetX() );
-						hYdiff->Fill( par1->GetY() - par2->GetY() );
-						hZdiff->Fill( par1->GetZ() - par2->GetZ() ); // Sanity check
-					}
-				}
-			
+			for( int tr = 0 ; tr < mwpcTracks->GetEntriesFast() ; tr++){
+				BmnMwpcTrack * thisTr = (BmnMwpcTrack *) mwpcTracks->At(tr);
+				FairTrackParam * par = (FairTrackParam *) thisTr->GetParamFirst();
+				
+				//cout << par->GetTx() << " " << par->GetTy() << "\n";
 			}
-
-
-
 
 
 
@@ -290,9 +292,10 @@ int main(int argc, char ** argv)
 	hXdiff->Write();
 	hYdiff->Write();
 	hZdiff->Write();
+	hChi2->Write();
 	for( int pl = 0; pl < 20; pl++){
-		hStripMult[pl]->Write();
-		hClusterMult[pl]->Write();
+		//hStripMult[pl]->Write();
+		//hClusterMult[pl]->Write();
 	}
 	outTree->Write();
 	outFile->Write();
@@ -349,7 +352,7 @@ void loadT0( TClonesArray *t0, double &time, double &amp){
 	amp = signal->GetAmp();
 }
 
-void skimForCarbon( TClonesArray *bc1Data, TClonesArray *bc2Data, double t0Time, std::vector<double> cuts, bool &pass ){
+void skimForCarbon( TClonesArray *bc1Data, TClonesArray *bc2Data, double t0Time, std::vector<double> cuts, bool &pass , double &z2){
 	double adcBC1 = -1., adcBC2 = -1.;
 
 	if( bc1Data->GetEntriesFast() ){
@@ -365,13 +368,36 @@ void skimForCarbon( TClonesArray *bc1Data, TClonesArray *bc2Data, double t0Time,
 		BmnTrigWaveDigit * signal = (BmnTrigWaveDigit *) bc2Data->At(bc2Idx);
 		adcBC2 = signal->GetPeak() - pedBC2;
 	}
+		
+	double x =  sqrt( adcBC1 * adcBC2 );
+	z2 = a_in + b_in*x + c_in*x*x;
 
 	double BC1_CPeak = cuts.at(0);
 	double BC1_CWidth = cuts.at(2);
 	double BC2_CPeak = cuts.at(1);
 	double BC2_CWidth = cuts.at(3);
+
+	
+
 	if(  ( fabs( adcBC1 - (BC1_CPeak-pedBC1) ) < 2*BC1_CWidth ) && ( fabs( adcBC2 - (BC2_CPeak-pedBC2) ) < 2*BC2_CWidth )   )
 		pass = true;
+	
+}
+
+void grabZ2( TClonesArray *bc3Data, TClonesArray *bc4Data, double t0Time, double &z2){
+	double x2 = -1;
+	if( bc3Data->GetEntriesFast() && bc4Data->GetEntriesFast() ){
+		int bc3Idx;
+		findIdx(bc3Data,bc3Idx,t0Time);
+		int bc4Idx;
+		findIdx(bc4Data,bc4Idx,t0Time);
+
+		BmnTrigWaveDigit * signalBC3 = (BmnTrigWaveDigit*) bc3Data->At(bc3Idx);
+		BmnTrigWaveDigit * signalBC4 = (BmnTrigWaveDigit*) bc4Data->At(bc4Idx);
+
+		x2 = sqrt( (signalBC3->GetPeak() - pedBC3)*(signalBC4->GetPeak() - pedBC4) );
+		z2 = a_out + b_out*x2 + c_out*x2*x2;
+	}
 }
 
 void findIdx( TClonesArray* data, int &index , double refT){

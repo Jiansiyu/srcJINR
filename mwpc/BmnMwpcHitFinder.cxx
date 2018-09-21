@@ -878,7 +878,7 @@ void BmnMwpcHitFinder::ProcessSegments( Int_t chNum,  Int_t *Nsegm, Double_t ***
 		}
 	}
 
-	// printf(">>>TESTING\n");
+	// printf(">>>TSTING\n");
 	// for (int iterOut = 0; iterOut < kmaxSeg; iterOut++){
 	//   if(OutSegArray[iterOut].Chi2 > 0){
 	//     printf("> Ch: %d, Seg %d, Nhits: %d, Chi2: %8.4f\n", chNum, iterOut, OutSegArray[iterOut].Nhits, OutSegArray[iterOut].Chi2);
