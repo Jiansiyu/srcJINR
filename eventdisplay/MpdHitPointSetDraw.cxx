@@ -19,9 +19,13 @@ using namespace std;
 TVector3 MpdHitPointSetDraw::GetVector(TObject* obj)
 {
     FairHit* hit = (FairHit*) obj;
-    if (fVerbose > 2) cout<<"MpdHitPointSetDraw::GetVector(): "<<hit->GetX()<<" "<<hit->GetY()<<" "<<hit->GetZ()<<endl;
+    cout<<"MpdHitPointSetDraw::GetVector(): "<<hit->GetX()<<" "<<hit->GetY()<<" "<<hit->GetZ()<<endl;
 
-    return TVector3(hit->GetX(), hit->GetY(), hit->GetZ());
+	// SOMEHOW THE COORDINATES GET MESSED UP??
+
+	cout << "\t " << hit->GetZ() << " " << hit->GetX() << " " << hit->GetY() << "\n";
+
+    return TVector3(hit->GetZ(), hit->GetX(), hit->GetY());
 }
 
 void MpdHitPointSetDraw::AddEveElementList()

@@ -179,6 +179,18 @@ void BmnTOF1Detector::SetGeoFile( string pathToFile ) {
 
 }
 
+
+void BmnTOF1Detector::SetGeo(BmnTof1GeoUtils *pGeoUtils) { // Used for run_reco_bmn.C
+	int UID;
+	for (int i = 0; i < fNStr; i++) {
+		UID = BmnTOF1Point::GetVolumeUID(0, fNPlane + 1, i + 1); 
+		const LStrip1 *pStrip = pGeoUtils->FindStrip(UID);	 
+		fCenterStrip[i] = pStrip->center;			 
+	}
+}
+
+
+
 //----------------------------------------------------------------------------------------
 
 void BmnTOF1Detector::ClearHits(){

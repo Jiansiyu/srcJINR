@@ -75,13 +75,13 @@ void eventdisplay(const char* sim_run_info = "$VMCWORKDIR/macro/run/evetest.root
             run_number = TString(strRunInfo(indDash+1, strRunInfo.Length() - indDash-1)).Atoi();
 
             // get geometry for run
-            TString root_file_path = "current_geo_file.root";
-            Int_t res_code = UniDbRun::ReadGeometryFile(run_period, run_number, (char*)root_file_path.Data());
-            if (res_code != 0)
-            {
-                cout << "\nGeometry couldn't' be read from the database" << endl;
-                return;
-            }
+            TString root_file_path = "$VMCWORKDIR/macro/run/current_geo_file.root";
+            //Int_t res_code = UniDbRun::ReadGeometryFile(run_period, run_number, (char*)root_file_path.Data());
+            //if (res_code != 0)
+            //{
+            //    cout << "\nGeometry couldn't' be read from the database" << endl;
+            //    return;
+            //}
 
             // get gGeoManager from ROOT file (if required)
             TFile* geoFile = new TFile(root_file_path, "READ");
@@ -252,37 +252,37 @@ void SetTasks(MpdEventManager* fMan, int data_source, int run_period, int run_nu
     if (data_source == 1)
     {
         // draw MWPC Hits
-        MpdHitPointSetDraw* MwpcHit = new MpdHitPointSetDraw("BmnMwpcHit", expPointColor, pointMarker);
-        fMan->AddTask(MwpcHit);
+        //MpdHitPointSetDraw* MwpcHit = new MpdHitPointSetDraw("BmnMwpcHit", expPointColor, pointMarker);
+        //fMan->AddTask(MwpcHit);
         // draw Silicon Hits
-        MpdHitPointSetDraw* SiliconHit = new MpdHitPointSetDraw("BmnSiliconHit", expPointColor, pointMarker);
-        fMan->AddTask(SiliconHit);
+        //MpdHitPointSetDraw* SiliconHit = new MpdHitPointSetDraw("BmnSiliconHit", expPointColor, pointMarker);
+        //fMan->AddTask(SiliconHit);
         // draw GEM Hits
-        MpdHitPointSetDraw* GemHit = new MpdHitPointSetDraw("BmnGemStripHit", expPointColor, pointMarker);
-        fMan->AddTask(GemHit);
+        //MpdHitPointSetDraw* GemHit = new MpdHitPointSetDraw("BmnGemStripHit", expPointColor, pointMarker);
+        //fMan->AddTask(GemHit);
         // draw DCH Hits
-        MpdHitPointSetDraw* DchHit = new MpdHitPointSetDraw("BmnDchHit", expPointColor, pointMarker);
-        fMan->AddTask(DchHit);
+        //MpdHitPointSetDraw* DchHit = new MpdHitPointSetDraw("BmnDchHit", expPointColor, pointMarker);
+        //fMan->AddTask(DchHit);
         // draw TOF1 Hits
         MpdHitPointSetDraw* Tof1Hit = new MpdHitPointSetDraw("BmnTof1Hit", expPointColor, pointMarker);
         fMan->AddTask(Tof1Hit);
         // draw TOF2 Hits
-        MpdHitPointSetDraw* Tof2Hit = new MpdHitPointSetDraw("BmnTofHit", expPointColor, pointMarker);
-        fMan->AddTask(Tof2Hit);
+        //MpdHitPointSetDraw* Tof2Hit = new MpdHitPointSetDraw("BmnTofHit", expPointColor, pointMarker);
+        //fMan->AddTask(Tof2Hit);
 
         // draw MWPC Tracks
-        BmnTrackDrawH* MwpcTrack = new BmnTrackDrawH("BmnMwpcTrack", "BmnMwpcHit");
-        fMan->AddTask(MwpcTrack);
+        //BmnTrackDrawH* MwpcTrack = new BmnTrackDrawH("BmnMwpcTrack", "BmnMwpcHit");
+        //fMan->AddTask(MwpcTrack);
         // draw GEM Tracks
-        BmnTrackDrawH* GemTrack = new BmnTrackDrawH("BmnGemTrack", "BmnGemStripHit");
-        fMan->AddTask(GemTrack);
+        //BmnTrackDrawH* GemTrack = new BmnTrackDrawH("BmnGemTrack", "BmnGemStripHit");
+        //fMan->AddTask(GemTrack);
         // draw DCH Tracks
         //BmnTrackDrawH* DchTrack = new BmnTrackDrawH("BmnDchTrack", "BmnDchHit");
         //fMan->AddTask(DchTrack);
 
         // draw Reconstructed Global Tracks
-        BmnGlobalTrackDraw* BmnGlobalTrack = new BmnGlobalTrackDraw("BmnGlobalTrack");
-        fMan->AddTask(BmnGlobalTrack);
+        //BmnGlobalTrackDraw* BmnGlobalTrack = new BmnGlobalTrackDraw("BmnGlobalTrack");
+        //fMan->AddTask(BmnGlobalTrack);
 
         //FairGeane* Geane = new FairGeane();
         //fMan->AddTask(Geane);

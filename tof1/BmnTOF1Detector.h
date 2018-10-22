@@ -110,6 +110,7 @@ class BmnTOF1Detector {
 		void SetGammaOffset( string pathToFile );	// For single plane of ToF400, moves gamma peak to correct location
 		void TestPrint( int strip );			// For single plane of ToF400, prints out correction files loaded for given strip
 		void SetGeoFile( string pathToFile );		// For single plane of ToF400, loads geometry file and sets strip centers in global coords
+		void SetGeo(BmnTof1GeoUtils *pGeoUtils);
 
 		void ClearHits();
 
@@ -127,11 +128,10 @@ class BmnTOF1Detector {
 		Bool_t SetCorrLR(Double_t *Mass){return kTRUE;};
 		Bool_t SetCorrSlewing( TString NameFile ){return kTRUE;};
 		Bool_t SetCorrTimeShift( TString NameFile ){return kTRUE;};
-		Bool_t SetGeoFile(TString NameFile){return kTRUE;};
 		Bool_t SaveHistToFile(TString NameFile){return kTRUE;};
 		Int_t GetFillHistLevel(){return fFillHist;};
 		void KillStrip(Int_t NumberOfStrip){return;};
-		Bool_t SetGeo(BmnTof1GeoUtils *pGeoUtils){return kTRUE;};
+		//Bool_t SetGeo(BmnTof1GeoUtils *pGeoUtils){return kTRUE;};
 		Bool_t GetXYZTime(Int_t Str, TVector3 *XYZ, Double_t *ToF){return kTRUE;};
 		Double_t GetWidth(Int_t Str){return 0.;};
 		Double_t GetTime(Int_t Str){return 0.;};

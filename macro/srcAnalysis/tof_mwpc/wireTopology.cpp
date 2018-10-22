@@ -78,14 +78,69 @@ int main(int argc, char ** argv)
 	////////////////////////////////////////////////////////////////////////////
 	// Output file
 	TString hName;
+	TH1D *** hOccupancy 	= new TH1D**[4];
+	TH1D *** hTimes		= new TH1D**[4];
+	TH1D *** hStripMult	= new TH1D**[4];
+	TH1D *** hStripMultBeam = new TH1D**[4];
+	TH1D *** hStripMultOutBeam=new TH1D**[4];
+	TH1D *** hOccupancyHigh	= new TH1D**[4];
+	TH1D *** hOccupancyLow	= new TH1D**[4];
+	TH1D *** hCenterMassDiff= new TH1D**[4];
+	TH1D *** hClustLen	= new TH1D**[4];
+	TH1D *** hNClust	= new TH1D**[4];
+	TH1D *** hStripDiff	= new TH1D**[4];
+	TH1D *** hStripDiffComb	= new TH1D**[4];
 	TH2D ** hWireEvent	= new TH2D*[4];
-	TH2D ** hWireEventFast	= new TH2D*[4];
+	TH2D *** hMultWires 	= new TH2D**[4];
+	TH2D ** hTimeWire	= new TH2D*[4];
 
 	for( int st = 0 ; st < 4 ; st++){
+		hOccupancy[st] 		= new TH1D*[6];
+		hTimes[st]		= new TH1D*[6];
+		hStripMult[st]		= new TH1D*[6];
+		hStripMultBeam[st]	= new TH1D*[6];
+		hStripMultOutBeam[st]	= new TH1D*[6];
+		hOccupancyHigh[st]	= new TH1D*[6];
+		hOccupancyLow[st]	= new TH1D*[6];
+		hCenterMassDiff[st]	= new TH1D*[6];
+		hClustLen[st]		= new TH1D*[6];
+		hNClust[st]		= new TH1D*[6];
+		hStripDiff[st]		= new TH1D*[6];
+		hStripDiffComb[st]	= new TH1D*[6];
 		hName = Form("hWireEvent_%i",st);
 		hWireEvent[st]		= new TH2D(hName,hName,2000,0.5,2000.5,600,0.5,600.5);
-		hName = Form("hWireEventFast_%i",st);
-		hWireEventFast[st]	= new TH2D(hName,hName,2000,0.5,2000.5,600,0.5,600.5);
+		hMultWires[st]		= new TH2D*[6];
+		hName = Form("hTimeWire_%i",st);
+		hTimeWire[st]		= new TH2D(hName,hName,600,0.5,600.5,250,-1000,1000);
+
+		for( int pl = 0 ; pl < 6 ; pl++){
+			hName = Form("hOccupancy_%i_%i",st,pl);
+			hOccupancy[st][pl]		= new TH1D(hName,hName,100,0.5,100.5);
+			hName = Form("hTimes_%i_%i",st,pl);
+			hTimes[st][pl]			= new TH1D(hName,hName,1000,0,1000);
+			hName = Form("hStripMult_%i_%i",st,pl);
+			hStripMult[st][pl]		= new TH1D(hName,hName,100,0.5,100.5);
+			hName = Form("hStripMultBeam_%i_%i",st,pl);
+			hStripMultBeam[st][pl]		= new TH1D(hName,hName,100,0.5,100.5);
+			hName = Form("hStripMultOutBeam_%i_%i",st,pl);
+			hStripMultOutBeam[st][pl]	= new TH1D(hName,hName,100,0.5,100.5);
+			hName = Form("hOccupancyHigh_%i_%i",st,pl);
+			hOccupancyHigh[st][pl]		= new TH1D(hName,hName,100,0.5,100.5);
+			hName = Form("hOccupancyLow_%i_%i",st,pl);
+			hOccupancyLow[st][pl]		= new TH1D(hName,hName,100,0.5,100.5);
+			hName = Form("hCenterMassDiff_%i_%i",st,pl);
+			hCenterMassDiff[st][pl] 	= new TH1D(hName,hName,201,-100.5,100.5);
+			hName = Form("hClustLen_%i_%i",st,pl);
+			hClustLen[st][pl] 		= new TH1D(hName,hName,100,0.5,100.5);
+			hName = Form("hNClust_%i_%i",st,pl);
+			hNClust[st][pl]			= new TH1D(hName,hName,100,0.5,100.5);
+			hName = Form("hStripDiff_%i_%i",st,pl);
+			hStripDiff[st][pl]		= new TH1D(hName,hName,201,-100.5,100.5);
+			hName = Form("hStripDiffComb_%i_%i",st,pl);
+			hStripDiffComb[st][pl]		= new TH1D(hName,hName,201,-100.5,100.5);
+			hName = Form("hMultWires_%i_%i",st,pl);
+			hMultWires[st][pl]		= new TH2D(hName,hName,100,0,100,10,0,10);
+		}
 	}
 
 	TFile * outFile = new TFile("reconstruction.root","RECREATE");
@@ -326,7 +381,7 @@ int main(int argc, char ** argv)
 
 			
 			if( z2_out <= 0 ) continue;
-			if( event > 2000) break;
+			//if( event > 2000) break;
 			////////////////////////////////////////////////////////////////////////////
 			// Now process MWPC digits
 			int flagHit[4][6][96] = { 0 };
@@ -335,54 +390,131 @@ int main(int argc, char ** argv)
 			int nWiresPlOutBeam[4][6] = { 0 };
 			std::vector< double > coords[4][6];
 			std::vector< int > wires[4][6];
-			unsigned int times[4][6][96] = { 9999 };
+			unsigned int times[4][6][96] = { 0 };
 			for( int en = 0 ; en < mwpcData -> GetEntriesFast() ; en++){
 				BmnMwpcDigit * signal = (BmnMwpcDigit*)mwpcData->At(en);
 				short st = signal->GetStation();
 				int wire = signal->GetWireNumber();
 				short pl = signal->GetPlane();
-				unsigned int t = t0Time - signal->GetTime();
+				unsigned int t = signal->GetTime();
 
-				// If wire fires multiple times, take the earliest timestamp
-				if( t < times[st][pl][wire] )
-					times[st][pl][wire] = t;
-				
-				// Cut physically around the beam position -- TODO: fix for all planes
-				if( fabs( wire - 35 ) > 10 ) continue; // only valid for st 0, pl 0 right now
-	
-				wires[st][pl].push_back( wire );
-				// Build multiplicity for how many wires fire in a single plane
-				// and save which wires fired
+
+				//if( fabs( wire - 35 ) > 10 ) continue; // only valid for st 0, pl 0 right now
+
+				// Now we can try to cut on low multiplicity in the plane
+
+				// Fill occupancy and time:
+				hOccupancy[st][pl]	-> Fill( wire 	);
+				hTimes[st][pl]		-> Fill( t 	);
+				//hWireEvent[st]	-> Fill( event , wire + 96*pl );
+
+				// Check which strips fired and create flag for hit strip
+				// and see how many strips fire per plane per station
+				//  (don't count strips that fired twice -- WHY DOES THIS HAPPEN???
 				if( flagHit[st][pl][wire] == 0 ){
 					nWiresPl[st][pl]++;
-				}
-				// Flag that a wire fired
-				flagHit[st][pl][wire]++;
+					times[st][pl][wire] = t;
+					hTimeWire[st]		-> Fill( wire + 96*pl , t0Time - t );
+					
+					// Convert strip into x,u,v coordinate based on ordering
+					coords[st][pl].push_back( (wire-midPl)*dw ); // So this holds for each plane just a vector of hits in that space (U,V,X)
+					wires[st][pl].push_back( wire );
 
+					if( fabs( wire - 35 ) <= 10 ) nWiresPlBeam[st][pl]++;
+					if( fabs( wire - 35 ) >  10 ) nWiresPlOutBeam[st][pl]++;
+
+				}
+				flagHit[st][pl][wire]++;
 			}
 
+			// For chamber 0, the order in z goes: U-, X-, V-, U+, X+, V+ (same order as pl 0 -> 5)
+			// For chamber 1, the order in z goes: V-, X-, U-, V+, X+, U+ (same order as pl 0 -> 5)
+			// For chmaber 2, the order in z goes: V+, U-, X-, V-, U+, X+ (same order as pl 0 -> 5)
+			// For chamber 3, the order in z goes: V+, U-, X-, V-, U+, X+ (same order as pl 0 -> 5) //TODO: is this actually correct?
+
+
+			// Now for all the coordinates we have, try to do matching and do 
+			// clustering AFTER we have spatial hit points
+			/*
+			for( int st = 0 ; st < 4 ; st++ ){
+				// If we have a (-) plane, we need to multiply coordinate by (-1)
+				// and we should always use the planes in the z-order they are to have
+				// best matching			
+				
+				for( int i = 0 ; i < coords[st][0].size() ; i++){ 		// this is U-
+					for( int j = 0 ; j < coords[st][1].size() ; j++){	// this is X-
+						double vTest = coords[st][1].at(j)*(-1) - coords[st][0].at(i)*(-1); // this is V
+						for( int k = 0 ; k < coords[st][2].size() ; k++){ // this is V-
+							if( fabs(coords[st][2].at(k)*(-1) - vTest) < 1*dw  ){
+								//cout << "hit at: ";
+								double x = coords[st][1].at(j)*(-1);
+								double uv = coords[st][2].at(k)*(-1)  + coords[st][0].at(i)*(-1);
+								//cout << x << " " << uv << "\n";
+							}
+						}
+					}
+				}
+				//cout << "done with station 0\n";
+				break;
+			}
+			*/
 			
 			for( int st = 0 ; st < 4 ; st++){
 				for( int pl = 0 ; pl < 6 ; pl++){
+					if( nWiresPl[st][pl] == 0 ) continue;
 
-					// Cut on multiplicity of a plane:
-					//if( nWiresPl[st][pl] > 7 ) continue;
+					// Count wire multiplicity in a plane
+					hStripMult[st][pl]->Fill( nWiresPl[st][pl] );
+					hStripMultBeam[st][pl]->Fill( nWiresPlBeam[st][pl] );
+					hStripMultOutBeam[st][pl]->Fill( nWiresPlOutBeam[st][pl] );
 
-					// Now let's look at how these events look like:
-					std::vector<int> earlyWire;
-					unsigned int earlyT = 9999;
-					for( int wr = 0 ; wr < wires[st][pl].size() ; wr ++ ){
-						hWireEvent[st] -> Fill( event, wires[st][pl].at(wr) + 96*pl );
-						if( earlyT  > times[st][pl][ wires[st][pl].at(wr) ] ){
-							earlyT = times[st][pl][ wires[st][pl].at(wr)];
-							earlyWire.push_back( wires[st][pl].at(wr) );
+					// If multiplicity is low, look at occupancy again, if it's high look at it again (separately)
+					if( nWiresPl[st][pl] > 6 )
+						for( int wr = 0 ; wr < wires[st][pl].size()  ; wr++ )
+							hOccupancyHigh[st][pl]->Fill( wires[st][pl].at(wr) );
+					else{
+						for( int wr = 0 ; wr < wires[st][pl].size()  ; wr++ )
+							hOccupancyLow[st][pl]->Fill( wires[st][pl].at(wr) );
+					}
+
+					
+					double avg  = std::accumulate( coords[st][pl].begin() , coords[st][pl].end(), 0. ) / coords[st][pl].size();
+					int clustLen = 0;
+					int nClust = 0;
+					for( int wr = 0 ; wr < coords[st][pl].size() ; wr++ ){
+					
+						hMultWires[st][pl]->Fill( wires[st][pl].at(wr) , flagHit[st][pl][ wires[st][pl].at(wr) ] );			
+
+						hCenterMassDiff[st][pl] ->Fill( coords[st][pl].at(wr) - avg );
+						
+						// Ask if the two wires that fired are next to each other:						
+						//  	because then they are in the same cluster
+						if( wr == coords[st][pl].size() - 1 ) break;
+						if( fabs( wires[st][pl].at(wr) - wires[st][pl].at(wr+1) ) <= 1 ){
+							clustLen++;
 						}
-						else if( earlyT = times[st][pl][ wires[st][pl].at(wr) ] ){
-							earlyWire.push_back( wires[st][pl].at(wr) );
+						else{
+							nClust++;
+							hClustLen[st][pl] ->Fill( clustLen );
+							clustLen = 0;
 						}
 					}
-					for( int wr = 0 ; wr < earlyWire.size() ; wr ++ )
-						hWireEventFast[st] -> Fill( event, earlyWire.at(wr) + 96*pl );
+					hNClust[st][pl] -> Fill( nClust );
+
+					for( int wr = 0 ; wr < wires[st][pl].size() ; wr ++ ){
+						for( int wr2 = wr ; wr2 < wires[st][pl].size() ; wr2 ++){
+							hStripDiff[st][pl] -> Fill( wr2 - wr );
+						}
+					}
+					for( int wr = 0 ; wr < nWiresPl[st][pl] ; wr ++ ){
+						int len = nWiresPl[st][pl];
+						while( len > 0){
+							for( int lp = 1 ; lp < len ; lp ++ ){
+								hStripDiffComb[st][pl]->Fill( lp );
+							}
+							len--;
+						}
+					}
 
 				}// End pl loop
 			}// End st loop
@@ -390,6 +522,53 @@ int main(int argc, char ** argv)
 			
 			//mwpcHM->Exec("",mwpcData,mwpcSegs, event);
 				// Since I'm debugging segment matching, create "tracks" that are just segments in each chamber and align them and save to skim tree	
+			/*
+			for( int sg = 0 ; sg < mwpcSegs->GetEntriesFast() ; sg++){
+				BmnMwpcSegment * thisSg = (BmnMwpcSegment *) mwpcSegs->At(sg);
+				FairTrackParam * par = (FairTrackParam *) thisSg->GetParamFirst();
+				
+				// par->GetX() = X-Pos
+				// par->GetY() = Y-Pos
+				// par->GetTx() = slope of x (so that some x at a given z distance is Tx*z + x)
+				// par->GetTy() = slope of y
+				// par->GetZ() = Z-Pos
+				
+					// For this segment, apply alignment to it
+				double tx = par->GetTx();
+				double x  = par->GetX();
+				double ty = par->GetTy();
+				double y  = par->GetY();
+				double z  = par->GetZ();
+				int Ch = -1;
+					// Figure out chamber ID from Z pos
+				if( fabs( ZCh_cent[0] - z) < 0.1 ) Ch = 0;
+				if( fabs( ZCh_cent[1] - z) < 0.1 ) Ch = 1;
+				if( fabs( ZCh_cent[2] - z) < 0.1 ) Ch = 2;
+				if( fabs( ZCh_cent[3] - z) < 0.1 ) Ch = 3;
+					// Alignments
+				tx += (mwpc_shift[Ch][0] + mwpc_shift[Ch][0] * tx * tx );
+				ty += (mwpc_shift[Ch][2] + mwpc_shift[Ch][2] * ty * ty );
+				x += (mwpc_shift[Ch][1]);
+				y += (mwpc_shift[Ch][3]);
+				
+				BmnTrack * Tr = NULL;
+
+				if( Ch == 0)
+					Tr = new ((*mwpc1Tracks)[mwpc1Tracks->GetEntriesFast()]) BmnTrack();
+				if( Ch == 1)
+					Tr = new ((*mwpc2Tracks)[mwpc2Tracks->GetEntriesFast()]) BmnTrack();
+				if( Ch == 2) 
+					Tr = new ((*mwpc3Tracks)[mwpc3Tracks->GetEntriesFast()]) BmnTrack();
+				if( Ch == 3)
+					Tr = new ((*mwpc4Tracks)[mwpc4Tracks->GetEntriesFast()]) BmnTrack();
+
+				FairTrackParam TrParams;
+				TrParams.SetPosition(TVector3(x,y,z));
+				TrParams.SetTx(tx);
+				TrParams.SetTy(ty);
+				Tr -> SetParamFirst(TrParams);
+			}
+			*/
 
 			////////////////////////////////////////////////////////////////////////////
 			// Now process MWPC tracking -- the shitty one...
@@ -416,7 +595,22 @@ int main(int argc, char ** argv)
 	outFile->cd();
 	for( int st = 0 ; st < 4 ; st++){
 		hWireEvent[st]	-> Write();
-		hWireEventFast[st]	-> Write();
+		for( int pl = 0 ; pl < 6 ; pl++){
+			hOccupancy[st][pl]	-> Write();
+			hTimes[st][pl]		-> Write();
+			hStripMult[st][pl]	-> Write();
+			hStripMultBeam[st][pl]	-> Write();
+			hStripMultOutBeam[st][pl]->Write();
+			hOccupancyHigh[st][pl]	-> Write();
+			hOccupancyLow[st][pl]	-> Write();
+			hCenterMassDiff[st][pl] -> Write();
+			hClustLen[st][pl] 	-> Write();
+			hNClust[st][pl]		-> Write();
+			hStripDiff[st][pl]	-> Write();
+			hStripDiffComb[st][pl]	-> Write();
+			hTimeWire[st]		-> Write();
+			hMultWires[st][pl]	-> Write();
+		}
 	}
 	
 	outTree->Write();

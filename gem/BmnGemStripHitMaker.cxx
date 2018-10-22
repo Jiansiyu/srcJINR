@@ -24,17 +24,18 @@ BmnGemStripHitMaker::BmnGemStripHitMaker()
     fOutputHitMatchesBranchName = "BmnGemStripHitMatch";
 
     fVerbose = 1;
-    fField = NULL;
+    //fField = NULL;
 
     fCurrentConfig = BmnGemStripConfiguration::None;
-    StationSet = NULL;
+    StationSet = nullptr;
+    TransfSet = nullptr;
 }
 
 BmnGemStripHitMaker::BmnGemStripHitMaker(Int_t run_period, Bool_t isExp)
-: fHitMatching(kTRUE), fAlignCorrFileName(""), fRunId(-1), fPeriodId(run_period) {
+: fHitMatching(kTRUE), fAlignCorrFileName(""), fRunId(-1), fPeriodId(run_period){
 
     fInputPointsBranchName = "StsPoint";
-    fInputDigitsBranchName = (!isExp) ? "BmnGemStripDigit" : "GEM";
+    //    fInputDigitsBranchName = (!isExp) ? "BmnGemStripDigit" : "GEM";
     fIsExp = isExp;
 
     fInputDigitMatchesBranchName = "BmnGemStripDigitMatch";
@@ -45,54 +46,63 @@ BmnGemStripHitMaker::BmnGemStripHitMaker(Int_t run_period, Bool_t isExp)
     fBmnEvQualityBranchName = "BmnEventQuality";
 
     fVerbose = 1;
-    fField = NULL;
+    //fField = NULL;
 
     fCurrentConfig = BmnGemStripConfiguration::None;
-    StationSet = NULL;
+    StationSet = nullptr;
+    TransfSet = nullptr;
+
+    fSigmaX = 0.0;
+    fSigmaY = 0.0;
 }
 
 BmnGemStripHitMaker::~BmnGemStripHitMaker() {
 
 }
 
-InitStatus BmnGemStripHitMaker::Init() {
+InitStatus BmnGemStripHitMaker::Init( FairField* fField ) {
 
     if (fVerbose) cout << "\nBmnGemStripHitMaker::Init()\n ";
 
     //if GEM configuration is not set -> return a fatal error
     if (!fCurrentConfig) Fatal("BmnGemStripHitMaker::Init()", " !!! Current GEM config is not set !!! ");
 
-    FairRootManager* ioman = FairRootManager::Instance();
+    //FairRootManager* ioman = FairRootManager::Instance();
 
-    fBmnGemStripDigitsArray = (TClonesArray*) ioman->GetObject(fInputDigitsBranchName);
-    if (!fBmnGemStripDigitsArray) {
-        cout << "BmnGemStripHitMaker::Init(): branch " << fInputDigitsBranchName << " not found! Task will be deactivated" << endl;
-        SetActive(kFALSE);
-        return kERROR;
-    }
+    //fBmnGemStripDigitsArray = (TClonesArray*) ioman->GetObject("GEM");
+    //if (!fBmnGemStripDigitsArray) {
+    //    fBmnGemStripDigitsArray = (TClonesArray*) ioman->GetObject("BmnGemStripDigit");
 
-    fBmnGemStripDigitMatchesArray = (TClonesArray*) ioman->GetObject(fInputDigitMatchesBranchName);
+    //    if (!fBmnGemStripDigitsArray) {
+    //        cout << "BmnGemStripHitMaker::Init(): Neither GEM nor BmnGemStripDigit found! Task will be deactivated" << endl;
+    //        SetActive(kFALSE);
+    //        return kERROR;
+    //    }
+    //}
 
-    if (fVerbose) {
-        if (fBmnGemStripDigitMatchesArray) cout << "  Strip matching information exists!\n";
-        else cout << "  Strip matching information doesn`t exist!\n";
-    }
+    //fBmnGemStripDigitMatchesArray = (TClonesArray*) ioman->GetObject(fInputDigitMatchesBranchName);
 
-    fBmnGemStripHitsArray = new TClonesArray(fOutputHitsBranchName);
-    ioman->Register(fOutputHitsBranchName, "GEM", fBmnGemStripHitsArray, kTRUE);
+    //if (fVerbose) {
+    //    if (fBmnGemStripDigitMatchesArray) cout << "  Strip matching information exists!\n";
+    //    else cout << "  Strip matching information doesn`t exist!\n";
+    //}
 
-    if (fHitMatching && fBmnGemStripDigitMatchesArray) {
-        fBmnGemStripHitMatchesArray = new TClonesArray("BmnMatch");
-        ioman->Register(fOutputHitMatchesBranchName, "GEM", fBmnGemStripHitMatchesArray, kTRUE);
-    } else {
-        fBmnGemStripHitMatchesArray = 0;
-    }
+    //fBmnGemStripHitsArray = new TClonesArray(fOutputHitsBranchName);
+    //ioman->Register(fOutputHitsBranchName, "GEM", fBmnGemStripHitsArray, kTRUE);
+
+    //if (fHitMatching && fBmnGemStripDigitMatchesArray) {
+    //    fBmnGemStripHitMatchesArray = new TClonesArray("BmnMatch");
+    //    ioman->Register(fOutputHitMatchesBranchName, "GEM", fBmnGemStripHitMatchesArray, kTRUE);
+    //} else {
+    //    fBmnGemStripHitMatchesArray = 0;
+    //}
 
     TString gPathGemConfig = gSystem->Getenv("VMCWORKDIR");
     gPathGemConfig += "/gem/XMLConfigs/";
 
     //Create GEM detector ------------------------------------------------------
     switch (fCurrentConfig) {
+	/*
         case BmnGemStripConfiguration::RunSummer2016:
             StationSet = new BmnGemStripStationSet_RunSummer2016(fCurrentConfig);
             if (fVerbose) cout << "   Current Configuration : RunSummer2016" << "\n";
@@ -111,18 +121,22 @@ InitStatus BmnGemStripHitMaker::Init() {
 
         case BmnGemStripConfiguration::RunSpring2018:
             StationSet = new BmnGemStripStationSet(gPathGemConfig + "GemRunSpring2018.xml");
-            cout << "   Current Configuration : RunSpring2018" << "\n";
+            if (fVerbose) cout << "   Current Configuration : RunSpring2018" << "\n";
             break;
+	*/
+        default: 
+            StationSet = new BmnGemStripStationSet(gPathGemConfig + "GemRunSRCSpring2018.xml");
+            TransfSet = new BmnGemStripTransform();
+            TransfSet->LoadFromXMLFile(gPathGemConfig + "GemRunSRCSpring2018.xml");
+            if (fVerbose) cout << "   Current GEM Configuration : GemRunSRCSpring2018" << "\n";
 
-        default:
-            StationSet = NULL;
     }
 
     const Int_t nStat = StationSet->GetNStations();
     const Int_t nParams = 3;
 
     TRandom* rand = new TRandom();
-    rand->SetSeed(2);
+    rand->SetSeed(0);
 
     corr = new Double_t**[nStat];
     misAlign = new Double_t**[nStat];
@@ -136,7 +150,7 @@ InitStatus BmnGemStripHitMaker::Init() {
             for (Int_t iPar = 0; iPar < nParams; iPar++) {
                 corr[iStat][iMod][iPar] = 0.;
                 if (!fIsExp)
-                    misAlign[iStat][iMod][iPar] = rand->Gaus(0., (iPar == 0) ? 0.03 : (iPar == 1) ? 0.05 : 0.);
+                    misAlign[iStat][iMod][iPar] = rand->Gaus(0., (iPar == 0) ? fSigmaX : (iPar == 1) ? fSigmaY : fSigmaZ);
             }
         }
     }
@@ -150,16 +164,20 @@ InitStatus BmnGemStripHitMaker::Init() {
         cout << "GEM-alignment corrections in use: " << endl;
     else
         cout << "Remain GEM-misalignment in use: " << endl;
+
+	cout << "Number of stations: " << nStat << "\n";
     for (Int_t iStat = 0; iStat != nStat; iStat++) {
         Int_t nModul = StationSet->GetGemStation(iStat)->GetNModules();
+	cout <<"\tNumber of modules in station: " << nModul << " with params: " << nParams << "\n";
         for (Int_t iMod = 0; iMod != nModul; iMod++) {
             for (Int_t iPar = 0; iPar != nParams; iPar++)
                 cout << "Stat " << iStat << " Module " << iMod << " Param. " << iPar << " Value (in cm.) " <<
                     TString::Format("% 7.4f", (fIsExp) ? corr[iStat][iMod][iPar] : misAlign[iStat][iMod][iPar]) << endl; //
         }
     }
-    fField = FairRunAna::Instance()->GetField();
-    if (!fField) Fatal("Init", "No Magnetic Field found");
+	cout << "done\n";
+    //fField = FairRunAna::Instance()->GetField();
+    //if (!fField) Fatal("Init", "No Magnetic Field found");
 
     // Initialize coefficients to be used when the Lorentz corrections calculating ...
     if (Abs(fField->GetBy(0., 0., 0.)) > FLT_EPSILON) {
@@ -179,25 +197,25 @@ InitStatus BmnGemStripHitMaker::Init() {
 
     //--------------------------------------------------------------------------
 
-    fBmnEvQuality = (TClonesArray*) ioman->GetObject(fBmnEvQualityBranchName);
+    //fBmnEvQuality = (TClonesArray*) ioman->GetObject(fBmnEvQualityBranchName);
 
     if (fVerbose) cout << "BmnGemStripHitMaker::Init() finished\n";
 
     return kSUCCESS;
 }
 
-void BmnGemStripHitMaker::Exec(Option_t* opt) {
+void BmnGemStripHitMaker::Exec(Option_t* opt, TClonesArray* fBmnGemStripDigitsArray, TClonesArray* fBmnGemStripHitsArray, TClonesArray* fBmnGemStripHitMatchesArray, FairField* fField) {
     // Event separation by triggers ...
-    if (fIsExp && fBmnEvQuality) {
-        BmnEventQuality* evQual = (BmnEventQuality*) fBmnEvQuality->UncheckedAt(0);
-        if (!evQual->GetIsGoodEvent())
-            return;
-    }
-    fBmnGemStripHitsArray->Delete();
+    //if (fIsExp && fBmnEvQuality) {
+    //    BmnEventQuality* evQual = (BmnEventQuality*) fBmnEvQuality->UncheckedAt(0);
+    //    if (!evQual->GetIsGoodEvent())
+    //        return;
+    //}
+    //fBmnGemStripHitsArray->Delete();
 
-    if (fHitMatching && fBmnGemStripHitMatchesArray) {
-        fBmnGemStripHitMatchesArray->Delete();
-    }
+    //if (fHitMatching && fBmnGemStripHitMatchesArray) {
+    //    fBmnGemStripHitMatchesArray->Delete();
+    //}
 
     Int_t kDigitCut = (fPeriodId == 7) ? 1000 : 400;
     if (!IsActive() || fBmnGemStripDigitsArray->GetEntriesFast() > kDigitCut)
@@ -206,18 +224,18 @@ void BmnGemStripHitMaker::Exec(Option_t* opt) {
     if (fVerbose) cout << "\nBmnGemStripHitMaker::Exec()\n ";
     clock_t tStart = clock();
 
-    fField = FairRunAna::Instance()->GetField();
+    //fField = FairRunAna::Instance()->GetField();
 
     if (fVerbose) cout << " BmnGemStripHitMaker::Exec(), Number of BmnGemStripDigits = " << fBmnGemStripDigitsArray->GetEntriesFast() << "\n";
 
-    ProcessDigits();
+    ProcessDigits( fBmnGemStripDigitsArray , fBmnGemStripHitsArray , fBmnGemStripHitMatchesArray , fField);
 
     if (fVerbose) cout << " BmnGemStripHitMaker::Exec() finished\n";
     clock_t tFinish = clock();
     workTime += ((Float_t) (tFinish - tStart)) / CLOCKS_PER_SEC;
 }
 
-void BmnGemStripHitMaker::ProcessDigits() {
+void BmnGemStripHitMaker::ProcessDigits( TClonesArray* fBmnGemStripDigitsArray, TClonesArray* fBmnGemStripHitsArray, TClonesArray* fBmnGemStripHitMatchesArray, FairField* fField) {
 
     FairMCPoint* MCPoint;
     BmnGemStripDigit* digit;
@@ -229,24 +247,29 @@ void BmnGemStripHitMaker::ProcessDigits() {
     //Loading digits ---------------------------------------------------------------
     Int_t AddedDigits = 0;
     Int_t AddedStripDigitMatches = 0;
-
     for (UInt_t idigit = 0; idigit < fBmnGemStripDigitsArray->GetEntriesFast(); idigit++) {
         digit = (BmnGemStripDigit*) fBmnGemStripDigitsArray->At(idigit);
         if (!digit->IsGoodDigit())
             continue;
+	cout << "\tget station " << digit->GetStation() << "\n";
         station = StationSet->GetGemStation(digit->GetStation());
+	cout << "\tget module " << digit->GetModule() << "\n";
         module = station->GetModule(digit->GetModule());
 
+	cout << "\tget strip layer, strip number, strip signal\n";
+	cout << "\t\t" << digit->GetStripLayer() << " " << digit->GetStripNumber() << " " << digit->GetStripSignal() << "\n";
         if (module->SetStripSignalInLayer(digit->GetStripLayer(), digit->GetStripNumber(), digit->GetStripSignal())) AddedDigits++;
-
+	
+	/*
         if (fBmnGemStripDigitMatchesArray) {
             strip_match = (BmnMatch*) fBmnGemStripDigitMatchesArray->At(idigit);
             if (module->SetStripMatchInLayer(digit->GetStripLayer(), digit->GetStripNumber(), *strip_match)) AddedStripDigitMatches++;
         }
+	*/
     }
 
     if (fVerbose) cout << "   Processed strip digits  : " << AddedDigits << "\n";
-    if (fVerbose && fBmnGemStripDigitMatchesArray) cout << "   Added strip digit matches  : " << AddedStripDigitMatches << "\n";
+    //if (fVerbose && fBmnGemStripDigitMatchesArray) cout << "   Added strip digit matches  : " << AddedStripDigitMatches << "\n";
     //------------------------------------------------------------------------------
 
     //Processing digits
@@ -262,18 +285,25 @@ void BmnGemStripHitMaker::ProcessDigits() {
 
         for (Int_t iModule = 0; iModule < station->GetNModules(); ++iModule) {
             BmnGemStripModule *module = station->GetModule(iModule);
-            Double_t z = module->GetZPositionRegistered();
-            z += corr[iStation][iModule][2]; //alignment implementation
 
             Int_t NIntersectionPointsInModule = module->GetNIntersectionPoints();
 
             for (Int_t iPoint = 0; iPoint < NIntersectionPointsInModule; ++iPoint) {
                 Double_t x = module->GetIntersectionPointX(iPoint);
                 Double_t y = module->GetIntersectionPointY(iPoint);
+                Double_t z = module->GetZPositionRegistered();
 
                 Double_t x_err = module->GetIntersectionPointXError(iPoint);
                 Double_t y_err = module->GetIntersectionPointYError(iPoint);
                 Double_t z_err = 0.0;
+
+                //Transform hit coordinates from local coordinate system of GEM-planes to global
+                if(TransfSet) {
+                    Plane3D::Point loc_point = TransfSet->ApplyTransforms(Plane3D::Point(-x, y, z), iStation, iModule);
+                    x = -loc_point.X();
+                    y = loc_point.Y();
+                    z = loc_point.Z();
+                }
 
                 Int_t RefMCIndex = 0;
 
@@ -304,6 +334,7 @@ void BmnGemStripHitMaker::ProcessDigits() {
 
                 x += deltaX;
                 y += deltaY;
+                z += corr[iStation][iModule][2];
 
                 if (Abs(fField->GetBy(0., 0., 0.)) > FLT_EPSILON) {
                     Int_t sign = (module->GetElectronDriftDirection() == ForwardZAxisEDrift) ? +1 : -1;
@@ -325,10 +356,10 @@ void BmnGemStripHitMaker::ProcessDigits() {
                 //--------------------------------------------------------------
 
                 //hit matching -------------------------------------------------
-                if (fHitMatching && fBmnGemStripHitMatchesArray) {
-                    new ((*fBmnGemStripHitMatchesArray)[fBmnGemStripHitMatchesArray->GetEntriesFast()])
-                            BmnMatch(module->GetIntersectionPointMatch(iPoint));
-                }
+                //if (fHitMatching && fBmnGemStripHitMatchesArray) {
+                //    new ((*fBmnGemStripHitMatchesArray)[fBmnGemStripHitMatchesArray->GetEntriesFast()])
+                //            BmnMatch(module->GetIntersectionPointMatch(iPoint));
+                //}
                 //--------------------------------------------------------------
             }
         }
@@ -353,30 +384,22 @@ void BmnGemStripHitMaker::Finish() {
         delete [] corr;
 
         delete StationSet;
-        StationSet = NULL;
+        StationSet = nullptr;
     }
 
-    if (fIsExp && Abs(fField->GetBy(0., 0., 0.)) > FLT_EPSILON)
-        delete [] lorCorrsCoeff;
+    if(TransfSet) {
+        delete TransfSet;
+        TransfSet = nullptr;
+    }
+
+    //if (Abs(fField->GetBy(0., 0., 0.)) > FLT_EPSILON)
+    //    delete [] lorCorrsCoeff;
 
     cout << "Work time of the GEM hit maker: " << workTime << endl;
 }
 
 void BmnGemStripHitMaker::ReadAlignCorrFile(TString fname, Double_t*** corr) {
-    Int_t coeff = 0; // -1 for RunWinter2016, +1 for RunSpring2017 and in the future
-    TString branchName = "";
-    switch (fCurrentConfig) {
-        case BmnGemStripConfiguration::RunWinter2016:
-            coeff = -1;
-            branchName = "BmnGemAlignmentCorrections";
-            break;
-
-        default:
-            coeff = 1;
-            branchName = "BmnGemAlignCorrections";
-            break;
-    }
-
+    TString branchName = "BmnGemAlignCorrections";
     TFile* f = new TFile(fname.Data());
     TTree* t = (TTree*) f->Get("cbmsim");
     TClonesArray* corrs = NULL;
@@ -385,21 +408,12 @@ void BmnGemStripHitMaker::ReadAlignCorrFile(TString fname, Double_t*** corr) {
     for (Int_t iEntry = 0; iEntry < t->GetEntries(); iEntry++) {
         t->GetEntry(iEntry);
         for (Int_t iCorr = 0; iCorr < corrs->GetEntriesFast(); iCorr++) {
-            if (coeff == -1) { // To be removed in future
-                BmnGemAlignmentCorrections* align = (BmnGemAlignmentCorrections*) corrs->UncheckedAt(iCorr);
-                Int_t iStat = align->GetStation();
-                Int_t iMod = align->GetModule();
-                corr[iStat][iMod][0] = coeff * align->GetCorrections().X();
-                corr[iStat][iMod][1] = coeff * align->GetCorrections().Y();
-                corr[iStat][iMod][2] = coeff * align->GetCorrections().Z();
-            } else {
-                BmnGemAlignCorrections* align = (BmnGemAlignCorrections*) corrs->UncheckedAt(iCorr);
-                Int_t iStat = align->GetStation();
-                Int_t iMod = align->GetModule();
-                corr[iStat][iMod][0] = coeff * align->GetCorrections().X();
-                corr[iStat][iMod][1] = coeff * align->GetCorrections().Y();
-                corr[iStat][iMod][2] = coeff * align->GetCorrections().Z();
-            }
+            BmnGemAlignCorrections* align = (BmnGemAlignCorrections*) corrs->UncheckedAt(iCorr);
+            Int_t iStat = align->GetStation();
+            Int_t iMod = align->GetModule();
+            corr[iStat][iMod][0] = align->GetCorrections().X();
+            corr[iStat][iMod][1] = align->GetCorrections().Y();
+            corr[iStat][iMod][2] = align->GetCorrections().Z();
         }
     }
     delete f;

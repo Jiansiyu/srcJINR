@@ -20,6 +20,7 @@
 #include "BmnGemStripHit.h"
 #include "BmnGemStripStationSet.h"
 #include "BmnGemStripConfiguration.h"
+#include "BmnGemStripTransform.h"
 #include "BmnGemAlignmentCorrections.h"
 #include "BmnGemAlignCorrections.h"
 #include <BmnEventQuality.h>
@@ -36,13 +37,13 @@ public:
 
     //void SetVerbosity(Bool_t verbose);
 
-    virtual InitStatus Init();
+    virtual InitStatus Init( FairField *fField );
 
-    virtual void Exec(Option_t* opt);
+    virtual void Exec(Option_t* opt, TClonesArray* fBmnGemStripDigitsArray, TClonesArray* fBmnGemStripHitsArray, TClonesArray*  fBmnGemStripHitMatchesArray, FairField* fField);
 
     virtual void Finish();
 
-    void ProcessDigits();
+	void ProcessDigits( TClonesArray* fBmnGemStripDigitsArray, TClonesArray* fBmnGemStripHitsArray, TClonesArray* fBmnGemStripHitMatchesArray, FairField* fField);
 
     void SetHitMatching(Bool_t opt = kTRUE) {
         fHitMatching = opt;
@@ -58,20 +59,32 @@ public:
 
     void SetAlignmentCorrectionsFileName(Int_t file_number) {
         fRunId = file_number;
-        if (fPeriodId == 5)
-            fAlignCorrFileName = "$VMCWORKDIR/input/alignCorrsLocal_GEM.root";
-        else if (fPeriodId == 6) {
-            fAlignCorrFileName = "alignment_GEM.root";
-            UniDbDetectorParameter::ReadRootFile(fPeriodId, file_number, "BM@N", "alignment", (Char_t*) fAlignCorrFileName.Data());
-        } else {
-            fAlignCorrFileName = "";
-        }
+        fAlignCorrFileName = "alignment_GEM.root";
+        UniDbDetectorParameter::ReadRootFile(fPeriodId, file_number, "BM@N", "alignment", (Char_t*) fAlignCorrFileName.Data());
     }
 
     inline Double_t GetLorentzByField(Double_t By, Int_t station) {
         // Appropriate Lorentz-corrections to the GEM-hits for RUN5, 6 as a function of voltage and so on
         // have been moved to the UniDb
         return lorCorrsCoeff[station][0] + lorCorrsCoeff[station][1] * By + lorCorrsCoeff[station][2] * By * By;
+    }
+
+    void SetSigmaX(Double_t sigX) {
+        fSigmaX = sigX;
+    }
+
+    void SetSigmaY(Double_t sigY) {
+        fSigmaY = sigY;
+    }
+
+    void SetSigmaZ(Double_t sigZ) {
+        fSigmaZ = sigZ;
+    }
+
+    void SetSigmaXYZ(Double_t sigX, Double_t sigY, Double_t sigZ) {
+        fSigmaX = sigX;
+        fSigmaY = sigY;
+        fSigmaZ = sigZ;
     }
 
 private:
@@ -85,14 +98,14 @@ private:
 
     /** Input array of Gem Points **/
     TClonesArray* fBmnGemStripPointsArray;
-    TClonesArray* fBmnGemStripDigitsArray;
+    //TClonesArray* fBmnGemStripDigitsArray;
     TClonesArray* fBmnGemStripDigitMatchesArray;
 
     /** Output array of Gem Hits **/
-    TClonesArray* fBmnGemStripHitsArray;
+    //TClonesArray* fBmnGemStripHitsArray;
 
     /** Output array of GEM Hit Matches **/
-    TClonesArray* fBmnGemStripHitMatchesArray;
+    //TClonesArray* fBmnGemStripHitMatchesArray;
 
     Bool_t fHitMatching;
     Int_t fRunId;
@@ -103,19 +116,24 @@ private:
 
     BmnGemStripStationSet *StationSet; //Entire GEM detector
 
+    BmnGemStripTransform *TransfSet; //Transformations for each module of the detector
+
     TString fAlignCorrFileName; // a file with geometry corrections
     void ReadAlignCorrFile(TString, Double_t***); // read corrections from the file
     Double_t*** corr; // array to store the corrections
 
     Double_t*** misAlign; // an array to introduce remain misalignment
-    FairField* fField;
+    //FairField* fField;
     Double_t** lorCorrsCoeff;
 
     TString fBmnEvQualityBranchName;
     TClonesArray* fBmnEvQuality;
 
+    Double_t fSigmaX;
+    Double_t fSigmaY;
+    Double_t fSigmaZ;
+
     ClassDef(BmnGemStripHitMaker, 1);
 };
-
 
 #endif

@@ -1,3 +1,4 @@
+#include <Rtypes.h>
 R__ADD_INCLUDE_PATH($VMCWORKDIR)
 #include "macro/run/bmnloadlibs.C"
 #include "macro/run/geometry.C"
@@ -142,7 +143,7 @@ void run_sim_bmn(TString inFile = "dC.04gev.mbias.100k.urqmd23.f14", TString out
     fRun->SetRadLenRegister(flag_store_FairRadLenPoint); // radiation length manager
 
     // SI-Digitizer
-    BmnSiliconConfiguration::SILICON_CONFIG si_config = BmnSiliconConfiguration::RunSpring2017;
+    BmnSiliconConfiguration::SILICON_CONFIG si_config = BmnSiliconConfiguration::RunSpring2018;
     //BmnSiliconConfiguration::SILICON_CONFIG si_config = BmnSiliconConfiguration::RunSpring2018;
     BmnSiliconDigitizer* siliconDigit = new BmnSiliconDigitizer();
     siliconDigit->SetCurrentConfig(si_config);
@@ -150,7 +151,7 @@ void run_sim_bmn(TString inFile = "dC.04gev.mbias.100k.urqmd23.f14", TString out
     fRun->AddTask(siliconDigit);
 
     // GEM-Digitizer
-    BmnGemStripConfiguration::GEM_CONFIG gem_config = BmnGemStripConfiguration::RunSpring2017;
+    BmnGemStripConfiguration::GEM_CONFIG gem_config = BmnGemStripConfiguration::RunSpring2018;
     //BmnGemStripConfiguration::GEM_CONFIG gem_config = BmnGemStripConfiguration::RunSpring2018;
     BmnGemStripMedium::GetInstance().SetCurrentConfiguration(BmnGemStripMediumConfiguration::ARCO2_70_30_E_1000_2500_3750_6300_B_0_59T);
     BmnGemStripDigitizer* gemDigit = new BmnGemStripDigitizer();
@@ -191,7 +192,7 @@ void run_sim_bmn(TString inFile = "dC.04gev.mbias.100k.urqmd23.f14", TString out
     // Transport nEvents
     fRun->Run(nEvents);
 
-    fRun->CreateGeometryFile("geofile_full.root");  // save the result setup geometry to the additional file
+    fRun->CreateGeometryFile("TESTING_geofile_full.root");  // save the result setup geometry to the additional file
 
 #ifdef LAQGSM
     TString Pdg_table_name = TString::Format("%s%s%c%s", gSystem->BaseName(inFile.Data()), ".g", (fRun->GetName())[6], ".pdg_table.dat");

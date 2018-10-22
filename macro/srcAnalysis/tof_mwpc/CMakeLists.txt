@@ -35,4 +35,7 @@ link_directories(${LINK_DIRECTORIES})
 
 	
 	add_executable(tof_mwpc tof_mwpc.cpp)
-target_link_libraries(tof_mwpc BmnData Core Base Sts Silicon TOF1 UniDb BmnSteering Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+target_link_libraries(tof_mwpc BmnData BmnField Core Base Sts Silicon TOF1 UniDb BmnSteering Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)
+	
+	add_executable(playSegments playSegments.cpp)
+target_link_libraries(playSegments BmnData BmnField Core Base Sts Silicon TOF1 UniDb BmnSteering Gem GlobalTracking KF Mwpc Dch ${ROOT_LIBRARIES} XMLParser Minuit Spectrum GenVector MathMore)

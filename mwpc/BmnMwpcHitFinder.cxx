@@ -340,7 +340,7 @@ void BmnMwpcHitFinder::Exec(Option_t* opt, TClonesArray* fBmnMwpcDigitArray, TCl
 		if ( ts < 80 || ts > 280 ) continue;
 		pn = kPln[st][pl];// made for the canonical sequence / x- v- u+ x+ v+ u-/
 
-		//  Loop over repeated wires
+		//  Loop over repeated wires -- TODO: this isn't working properly because it only looks for repeated 0 wire??
 		Bool_t repeat_wire = 0; 
 		if (iw_Ch[st][pn] > 0) {
 			for (Int_t ix = 0; ix < iw_Ch[st][pn]; ix++) {
@@ -350,12 +350,18 @@ void BmnMwpcHitFinder::Exec(Option_t* opt, TClonesArray* fBmnMwpcDigitArray, TCl
 				}
 			}//ix
 		}
-		if (repeat_wire) continue;
+		if (repeat_wire){ 
+			continue;
+		}
 
-		if (iw_Ch[st][pn] >= 80) continue;
+		if (iw_Ch[st][pn] >= 80){
+			continue;
+		}
 
-		DigitsArray[st][pn][wire] = 1.;
-		iw_Ch[st][pn]++; 
+		DigitsArray[st][pn][wire] = 1.;		// basically just 0,1 for a wire that has been hit
+
+		iw_Ch[st][pn]++; 			// counts how many wires are in a given station in a given plane
+							// and keeps the correct order of the planes in actual geometry
 
 	}// iDigit
 
@@ -499,6 +505,10 @@ void BmnMwpcHitFinder::SegmentFinder(Int_t chNum, Int_t **Nclust_, Double_t ***C
 	// 8  {X+, V+, U-}
 
 	Int_t x = 0, v = 1, u = 2 , x1 = 3, v1 = 4, u1 = 5;//MK
+
+		// For given 'code' this tells me which plane is 
+		// x,v,u or x1,v1,u1. but i have 4 stations with 6 planes, so
+		// why do i have 8 code values??
 
 	switch (code) {
 		case 1: x = 0; v = 1; u = 2; x1 = 3; v1 = 4; u1 = 5; break;

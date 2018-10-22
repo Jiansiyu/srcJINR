@@ -47,14 +47,14 @@ class BmnTOF1Conteiner : public TObject {
 		int GetStrip()      	const { return fStrip; }
 		int GetPlane()		const { return fPlane; }
 
-		double GetTime()       	const { return fTime; }
-		double GetAmp()      	const { return fAmp; }
+		double GetTime()       		const { return fTime; }
+		double GetAmp()      		const { return fAmp; }
 		double GetXLocal()       	const { return fX_local; }
 		double GetYLocal()       	const { return fY_local; }
 		double GetZLocal()       	const { return fZ_local; }
-		double GetXGlobal()       	const { return fX_glob; }
-		double GetYGlobal()       	const { return fY_glob; }
-		double GetZGlobal()       	const { return fZ_glob; }
+		double GetX()       		const { return fX_glob; }
+		double GetY()   	    	const { return fY_glob; }
+		double GetZ() 	      		const { return fZ_glob; }
 		double GetdL()			const { return fdL; }
 
 		void SetParameters ( int plane, int strip, double time, double amp, double x_local, double y_local, double z_local, double x_glob, double y_glob, double z_glob);

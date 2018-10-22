@@ -30,6 +30,12 @@ void EventDisplay::EventInfo(Int_t event, Int_t px, Int_t py, TObject *selected)
 EventDisplay::EventDisplay(const TGWindow *p, UInt_t w, UInt_t h) :
 	TGMainFrame(p, w, h)
 {
+	tab = new TGCompositeFrame(this,1250,1000);
+	
+	fEcan = new TGLEmbeddedViewer(this);
+	fEcan->TGLViewer::UseLightColorSet();
+
+	/*
 	graph = -1;
 	divide = -1;
 	fEcan = new TRootEmbeddedCanvas(0,this,1250,1000);
@@ -38,8 +44,8 @@ EventDisplay::EventDisplay(const TGWindow *p, UInt_t w, UInt_t h) :
 	fEcan->AdoptCanvas(myc);
 	myc->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)","EventDisplay",this,
 			"EventInfo(Int_t,Int_t,Int_t,TObject*)");
-	AddFrame(fEcan, new TGLayoutHints(kLHintsTop | kLHintsLeft |
-				kLHintsExpandX  | kLHintsExpandY,0,0,1,1));
+	*/
+	//AddFrame(fEcan, new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsExpandX  | kLHintsExpandY,0,0,1,1));
 	Int_t parts[] = {45, 15, 10, 30};
 	fStatusBar = new TGStatusBar(this, 50, 10, kVerticalFrame);
 	fStatusBar->SetParts(parts, 4);
@@ -52,8 +58,7 @@ EventDisplay::EventDisplay(const TGWindow *p, UInt_t w, UInt_t h) :
 	hframe->AddFrame(exit, new TGLayoutHints(kLHintsCenterX, 5, 5, 3, 4));
 
 	AddFrame(hframe, new TGLayoutHints(kLHintsCenterX, 2, 2, 2, 2));
-
-
+	
 	SetWindowName("Embedded Canvas Status Info");
 	MapSubwindows();
 

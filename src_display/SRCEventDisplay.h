@@ -66,7 +66,8 @@
 
 class EventDisplay : public TGMainFrame {
 	private:
-		TRootEmbeddedCanvas  *fEcan;
+		TGCompositeFrame	*tab;
+		TGLEmbeddedViewer  	*fEcan;
 		TGStatusBar          *fStatusBar;
 	public:
 		EventDisplay(const TGWindow *p, UInt_t w, UInt_t h);

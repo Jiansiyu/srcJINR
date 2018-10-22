@@ -148,6 +148,7 @@ Double_t BmnGemStripStation::GetInductionGapThicknessOfModule(Int_t module_num) 
 }
 
 BmnGemStripModule* BmnGemStripStation::GetModule(Int_t module_num) {
+	cout << module_num << " " << NModules << " " << Modules << "\n";
     if(Modules && module_num >= 0 && module_num < NModules) {
         return Modules[module_num];
     }

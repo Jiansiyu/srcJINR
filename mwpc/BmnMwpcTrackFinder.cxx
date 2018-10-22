@@ -99,6 +99,7 @@ void BmnMwpcTrackFinder::Exec(Option_t* opt, TClonesArray* fBmnMwpcSegmentsArray
 		if ( Nbest_Ch[iChamber] > 0){
 			SegmentParamAlignment(iChamber, Nbest_Ch, par_ab_Ch, shift);
 			for (Int_t ise = 0; ise < Nbest_Ch[iChamber]; ise++) {
+				//if( iChamber == 0 ) cout << par_ab_Ch[iChamber][0][ise] << " " << par_ab_Ch[iChamber][1][ise] << " " << par_ab_Ch[iChamber][2][ise] << " " << par_ab_Ch[iChamber][3][ise] << "\n";
 				hChi2_ndf_Ch.at(iChamber) -> Fill(Chi2_ndf_Ch[iChamber][ise]);
 				hpar_Ax_Ch.at(iChamber) -> Fill( par_ab_Ch[iChamber][0][ise]);
 				hpar_Bx_Ch.at(iChamber) -> Fill( par_ab_Ch[iChamber][1][ise]);
@@ -138,7 +139,14 @@ void BmnMwpcTrackFinder::Exec(Option_t* opt, TClonesArray* fBmnMwpcSegmentsArray
 
 
 	for (Int_t iPair = 0; iPair < kNumPairs; iPair++) {
-		if ( Nbest_pair[iPair] > 0) SegmentParamAlignment(iPair, Nbest_pair,  par_ab_pair, shift_pair);
+		if ( Nbest_pair[iPair] > 0){
+			SegmentParamAlignment(iPair, Nbest_pair,  par_ab_pair, shift_pair);
+			if( iPair == 0){
+				for (Int_t bst = 0; bst < Nbest_pair[iPair]; bst++) {
+					//cout << par_ab_pair[iPair][0][bst] << " " << par_ab_pair[iPair][1][bst] << " " << par_ab_pair[iPair][2][bst] << " " << par_ab_pair[iPair][3][bst] << "\n";
+				}
+			}
+		}
 	}
 
 	if ( Nbest_pair[0] > 0 && Nbest_pair[1] > 0 ) PairMatching(Nbest_pair, par_ab_pair, kZ_midle_pair);
@@ -334,14 +342,14 @@ void BmnMwpcTrackFinder::SegmentMatching( Int_t first_Ch, Int_t *Nbest, Double_t
 			Float_t x1mid = par_ab[first_Ch][0][bst1] *( 0 - kZmid[first_Ch]) + par_ab[first_Ch][1][bst1] ;
 			Float_t y1mid = par_ab[first_Ch][2][bst1] *( 0 - kZmid[first_Ch]) + par_ab[first_Ch][3][bst1] ;
 
+			//if( first_Ch == 0) cout << par_ab[first_Ch][0][bst1] << " " << par_ab[first_Ch][1][bst1] << " " << par_ab[first_Ch][2][bst1] << " " << par_ab[first_Ch][3][bst1] << " " << kZmid[first_Ch] << " " << x1mid << " " << y1mid << "\n";
+
 			//   cout<<" bst1 " <<bst1<<" x1mid "<<x1mid<<" y1mid "<<y1mid<<endl;
-
 			for (Int_t bst2 = 0; bst2 < Nbest[Secon_Ch]; bst2++) {
-
 				//ch2       
 				Float_t x2mid =  par_ab[Secon_Ch][0][bst2] *( 0 - kZmid[Secon_Ch])  + par_ab_Ch[Secon_Ch][1][bst2] ;
 				Float_t y2mid =  par_ab[Secon_Ch][2][bst2] *( 0 - kZmid[Secon_Ch])  + par_ab_Ch[Secon_Ch][3][bst2] ;
-
+				
 				//	cout<<" bst2 " <<bst2<<" x2mid "<<x2mid<<" y2mid "<<y2mid<<endl;
 
 				dAx12 = par_ab[first_Ch][0][bst1] - par_ab[Secon_Ch][0][bst2];
@@ -418,7 +426,7 @@ void BmnMwpcTrackFinder::SegmentMatching( Int_t first_Ch, Int_t *Nbest, Double_t
 				Nhits_m[Secon_Ch][Nbest_pair_[Pairr]] = OutVector.at(iter).Nhits2;
 				Min_distX[Nbest_pair_[Pairr]]         = OutVector.at(iter).distX;
 				Min_distY[Nbest_pair_[Pairr]]         = OutVector.at(iter).distY;
-
+			
 				Nbest_pair_[Pairr]++;
 			}// < kmaxPairs)
 		}//iter
@@ -626,6 +634,8 @@ void BmnMwpcTrackFinder::SegmentFit(Int_t First_Ch, Float_t **z_gl_, Float_t *si
 				//	cout<<" i1 "<<i1<<" bmatr "<<bmatr[i1][j1]<<" F "<<matrF[j1] <<endl;
 			}    
 		} // i1	
+		//if( First_Ch == 0) cout << par_ab_pair_[Pair1][0][bst] << " " << par_ab_pair_[Pair1][1][bst] << " " << par_ab_pair_[Pair1][2][bst] << " " << par_ab_pair_[Pair1][3][bst] << "\n";
+
 		if (fDebug){
 			cout<<endl;
 			cout<<" Pair "<<Pair1<<" par [0] "<<par_ab_pair_[Pair1][0][bst]<<" par [1] "<<par_ab_pair_[Pair1][1][bst]<<" par [2] "<<par_ab_pair_[Pair1][2][bst]<<" par [3] "<<par_ab_pair_[Pair1][3][bst]<<endl;
